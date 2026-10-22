@@ -1,0 +1,3967 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f5f2ec">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="记账本">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%232f5d50'/%3E%3Ctext x='50' y='70' font-size='58' text-anchor='middle' fill='%23fff'%3E%C2%A5%3C/text%3E%3C/svg%3E">
+<script>
+  (function () {
+    try {
+      var theme = localStorage.getItem('jzb.theme');
+      var dark = theme === 'dark' || ((!theme || theme === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.dataset.theme = 'dark';
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.content = dark ? '#151412' : '#f5f2ec';
+    } catch (ignored) {}
+  })();
+</script>
+<title>记账本</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f5f2ec;
+    --bg-deep: #efeae1;
+    --surface: #fffdf9;
+    --surface-2: #faf7f1;
+    --ink: #201d19;
+    --muted: #7d756a;
+    --faint: #a79e91;
+    --line: #e6dfd4;
+    --line-strong: #d8cfc2;
+    --accent: #2f5d50;
+    --accent-strong: #24483e;
+    --accent-soft: #e7efe9;
+    --accent-ink: #24483e;
+    --income: #2f7d5c;
+    --expense: #b4533a;
+    --danger: #b42318;
+    --warning-bg: #fff5ed;
+    --warning-ink: #8a4b1a;
+    --toast-bg: #201d19;
+    --toast-ink: #fff;
+    --toast-action: #f2c94c;
+    --shadow: 0 18px 50px rgba(45, 38, 28, .08);
+    --radius: 20px;
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #151412;
+    --bg-deep: #0f0e0d;
+    --surface: #1f1c19;
+    --surface-2: #27231f;
+    --ink: #f2ede4;
+    --muted: #aaa194;
+    --faint: #7f766a;
+    --line: #37322c;
+    --line-strong: #4d463d;
+    --accent: #3f7a68;
+    --accent-strong: #4b8b77;
+    --accent-soft: rgba(127, 183, 163, .14);
+    --accent-ink: #a9d3c1;
+    --income: #72c39c;
+    --expense: #e08b72;
+    --danger: #f08a7c;
+    --warning-bg: #2c241d;
+    --warning-ink: #e0b083;
+    --toast-bg: #f2ede4;
+    --toast-ink: #1b1916;
+    --toast-action: #2f5d50;
+    --shadow: 0 18px 50px rgba(0, 0, 0, .35);
+  }
+
+  :root[data-theme="dark"] body {
+    background:
+      radial-gradient(1200px 600px at 50% -180px, #2a2621 0%, rgba(42, 38, 33, 0) 70%),
+      linear-gradient(180deg, #1b1815 0%, var(--bg) 55%, var(--bg-deep) 100%);
+  }
+  :root[data-theme="dark"] .banner {
+    background: #2c1a16;
+    color: #f0b4a4;
+    border-bottom-color: #4a2a23;
+  }
+  :root[data-theme="dark"] .backup-reminder {
+    background: #1d2a24;
+    border-color: #31463c;
+    color: #bfe0d2;
+  }
+  :root[data-theme="dark"] .backup-reminder button { color: #bfe0d2; }
+  :root[data-theme="dark"] .backup-reminder button:hover { background: rgba(191, 224, 210, .08); }
+  :root[data-theme="dark"] .backup-reminder .remind-later { color: #8fa99c; }
+  :root[data-theme="dark"] .delete-btn:hover { background: #3a211d; color: var(--danger); }
+  :root[data-theme="dark"] .setting-row.danger:hover:not(:disabled) strong { color: #ffb4a8; }
+  :root[data-theme="dark"] .danger-btn {
+    background: #3a211d;
+    border-color: #5a2f27;
+    color: #f0a094;
+  }
+  :root[data-theme="dark"] .danger-btn:hover { background: #4a2924; }
+  :root[data-theme="dark"] .empty-state { background: rgba(31, 28, 25, .45); }
+  :root[data-theme="dark"] .day-head { border-bottom-color: rgba(55, 50, 44, .7); }
+  :root[data-theme="dark"] .icon-btn:hover { background: rgba(127, 183, 163, .12); }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--ink);
+    background:
+      radial-gradient(1200px 600px at 50% -180px, #fffdf8 0%, rgba(255,253,248,0) 70%),
+      linear-gradient(180deg, #f8f5ef 0%, var(--bg) 55%, var(--bg-deep) 100%);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  body.modal-open { overflow: hidden; }
+  button, input { font: inherit; }
+  button { color: inherit; -webkit-tap-highlight-color: transparent; }
+  button:not(:disabled) { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+  .income { color: var(--income); }
+  .expense { color: var(--expense); }
+  .muted { color: var(--muted); }
+
+  /* ---------- App shell ---------- */
+  .app {
+    width: 100%;
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 22px 18px 64px;
+  }
+  .app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .brand {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 650;
+    letter-spacing: .06em;
+  }
+  .icon-btn {
+    width: 38px;
+    height: 38px;
+    display: inline-grid;
+    place-items: center;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--muted);
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .icon-btn:hover { background: rgba(47, 93, 80, .07); color: var(--accent-ink); }
+  .settings-btn { font-size: 22px; line-height: 1; letter-spacing: .08em; }
+
+  /* ---------- Balance ---------- */
+  .balance-section {
+    padding: 4px 4px 24px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 18px;
+  }
+  .balance-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .eyebrow {
+    margin: 0 0 2px;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: .08em;
+  }
+  .balance-amount {
+    margin: 0;
+    font-size: clamp(38px, 10vw, 48px);
+    line-height: 1.08;
+    font-weight: 650;
+    letter-spacing: -.035em;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    word-break: break-all;
+  }
+  .balance-amount.negative { color: var(--expense); }
+  .text-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 2px;
+    border: 0;
+    background: transparent;
+    color: var(--accent-ink);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .text-btn:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+  .balance-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 0; }
+  .balance-label-line { display: flex; align-items: baseline; gap: 8px; }
+  .balance-label-line .eyebrow { margin: 0; }
+  .balance-calibrate {
+    padding: 0;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .balance-calibrate:hover { color: var(--accent); }
+  .text-btn-subtle { color: var(--muted); font-size: 12px; font-weight: 500; }
+  .text-btn-subtle:hover { color: var(--accent); }
+  .stats-btn { margin-top: 0; }
+  .stats-btn svg { width: 15px; height: 15px; }
+  .today-totals {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 18px;
+  }
+  .today-total {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .today-total span {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: .02em;
+  }
+  .today-total strong {
+    font-size: 15px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ---------- Entry form ---------- */
+  .entry-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px;
+    box-shadow: var(--shadow);
+    margin-bottom: 24px;
+  }
+  .field { margin-bottom: 15px; }
+  .field:last-of-type { margin-bottom: 17px; }
+  .field-label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 12px;
+    font-weight: 550;
+    color: var(--muted);
+    letter-spacing: .02em;
+  }
+  fieldset.field {
+    min-width: 0;
+    margin: 0 0 15px;
+    padding: 0;
+    border: 0;
+  }
+  fieldset.field legend { padding: 0; }
+  .segmented {
+    display: flex;
+    gap: 3px;
+    padding: 4px;
+    border-radius: 13px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+  }
+  .seg-btn {
+    flex: 1;
+    min-height: 38px;
+    padding: 7px 10px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 550;
+    transition: background .15s ease, color .15s ease, box-shadow .15s ease;
+  }
+  .seg-btn.is-active {
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: 0 1px 4px rgba(45, 38, 28, .1);
+    font-weight: 650;
+  }
+  .segmented-small { padding: 3px; border-radius: 11px; }
+  .segmented-small .seg-btn { min-height: 32px; font-size: 12px; padding: 5px 14px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { position: relative; display: inline-flex; }
+  .chip input {
+    position: absolute;
+    width: 1px; height: 1px;
+    margin: -1px; padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .chip span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 6px 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 500;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .chip span:hover { border-color: var(--line-strong); color: var(--ink); }
+  .chip input:checked + span {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .chip input:focus-visible + span {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  .hint {
+    margin: 7px 0 0;
+    font-size: 12px;
+    color: var(--warning-ink);
+  }
+  .amount-wrap {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 13px 8px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface-2);
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .amount-wrap:focus-within {
+    border-color: var(--accent);
+    background: var(--surface);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .currency {
+    color: var(--faint);
+    font-size: 21px;
+    font-weight: 500;
+    line-height: 1;
+    transform: translateY(-1px);
+  }
+  .amount-input {
+    width: 100%;
+    min-width: 0;
+    padding: 2px 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--ink);
+    font-size: 29px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .amount-input::placeholder { color: #c2b9ac; font-weight: 500; }
+  .date-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+  }
+  .date-row .field-label { margin: 0; }
+  .date-input {
+    width: 100%;
+    min-height: 42px;
+    padding: 8px 11px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface-2);
+    color: var(--ink);
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+  .date-input:focus {
+    border-color: var(--accent);
+    outline: 0;
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .date-input::-webkit-calendar-picker-indicator { opacity: .45; }
+  .text-input {
+    width: 100%;
+    min-height: 42px;
+    padding: 8px 11px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface-2);
+    color: var(--ink);
+    font-size: 14px;
+  }
+  .text-input:focus {
+    border-color: var(--accent);
+    outline: 0;
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .text-input::placeholder { color: var(--faint); }
+  .field-optional { margin-left: 4px; color: var(--faint); font-size: 11px; font-weight: 400; }
+  .error {
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: var(--danger);
+  }
+  .primary-btn {
+    width: 100%;
+    min-height: 48px;
+    padding: 11px 18px;
+    border: 1px solid var(--accent);
+    border-radius: 14px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 650;
+    letter-spacing: .02em;
+    transition: background .15s ease, border-color .15s ease, opacity .15s ease, transform .1s ease;
+  }
+  .dialog-actions .primary-btn { width: auto; min-width: 120px; }
+  .primary-btn:hover:not(:disabled) { background: var(--accent-strong); border-color: var(--accent-strong); }
+  .primary-btn:active:not(:disabled) { transform: translateY(1px); }
+  .primary-btn:disabled { opacity: .38; }
+  .ghost-btn, .danger-btn {
+    min-height: 42px;
+    padding: 9px 16px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .ghost-btn {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .ghost-btn:hover { background: var(--surface-2); border-color: var(--line-strong); }
+  .danger-btn {
+    border: 1px solid #ecc7c1;
+    background: #fff3f1;
+    color: var(--danger);
+  }
+  .danger-btn:hover { background: #ffe9e6; }
+  .ghost-btn:disabled, .danger-btn:disabled { opacity: .38; }
+
+  /* ---------- Today ---------- */
+  .today-section { margin-top: 4px; }
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 4px 10px;
+  }
+  .section-head h2 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: .02em;
+  }
+  .record-list {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+  }
+  .record-list:empty { display: none; }
+  .record-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 10px;
+    align-items: center;
+    padding: 14px 16px;
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+  }
+  .record-row:first-child { border-top: 0; }
+  .record-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+  }
+  .record-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .cat-tag {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 2px 8px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 550;
+    white-space: nowrap;
+  }
+  .record-note {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .record-amount {
+    flex: 0 0 auto;
+    font-size: 15px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .record-amount.adjust { color: var(--muted); }
+  .record-sub {
+    grid-column: 1 / -1;
+    margin-top: 4px;
+    color: var(--faint);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
+  .record-row[data-editable="true"] { cursor: pointer; }
+  .record-row[data-editable="true"]:hover { background: var(--surface-2); }
+  .row-actions { display: flex; align-items: center; gap: 1px; }
+  .row-action {
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--faint);
+    display: inline-grid;
+    place-items: center;
+    opacity: 1;
+    transition: opacity .15s ease, background .15s ease, color .15s ease;
+  }
+  .row-action svg { width: 16px; height: 16px; }
+  .edit-btn:hover { background: var(--accent-soft); color: var(--accent-ink); }
+  .delete-btn:hover { background: #fff0ed; color: var(--danger); }
+  .empty-state {
+    margin: 0;
+    padding: 28px 18px;
+    border: 1px dashed var(--line-strong);
+    border-radius: 18px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    background: rgba(255, 253, 249, .45);
+  }
+
+  /* ---------- Dialogs ---------- */
+  dialog.dialog {
+    display: none;
+    width: min(560px, calc(100vw - 32px));
+    max-height: min(90vh, 900px);
+    margin: auto;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: 0 30px 100px rgba(30, 24, 18, .3);
+    overflow: hidden;
+  }
+  dialog.dialog[open] { display: flex; flex-direction: column; }
+  dialog.dialog::backdrop {
+    background: rgba(28, 24, 19, .42);
+    backdrop-filter: blur(2px);
+  }
+  /* 桌面端统一使用 560px 主宽度；设置/导入等小弹层收窄到 430px；统计与明细在移动端全屏。 */
+  dialog.dialog.dialog-small { width: min(430px, calc(100vw - 32px)); }
+  .dialog-head {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .dialog-head h2 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 650;
+    letter-spacing: -.01em;
+  }
+  .dialog-sub {
+    margin: 3px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .dialog-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 18px 20px 22px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .detail-body { padding: 0 20px 24px; }
+  .detail-toolbar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+  }
+  .detail-search { flex: 1 1 auto; min-width: 0; min-height: 36px; padding: 6px 10px; font-size: 13px; }
+  .detail-filter { flex: 0 0 auto; width: 132px; min-height: 36px; }
+  .dialog-actions {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 20px 18px;
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+  }
+  .dialog-desc {
+    margin: 0 0 16px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.75;
+  }
+  #openingForm {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
+  #editForm, #calibrationForm, #clearForm {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .calibration-current {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface-2);
+  }
+  .calibration-current span { color: var(--muted); font-size: 12px; }
+  .calibration-current strong { font-size: 15px; font-variant-numeric: tabular-nums; }
+  .calibration-diff {
+    min-height: 20px;
+    margin: 8px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.55;
+  }
+  .calibration-diff.positive { color: var(--income); }
+  .calibration-diff.negative { color: var(--expense); }
+  .muted-note {
+    margin: 14px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.7;
+  }
+  .warning-note {
+    margin: 12px 0 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--warning-bg);
+    color: var(--warning-ink);
+    font-size: 12px;
+    line-height: 1.65;
+  }
+  .error-text { color: var(--danger); font-size: 12px; line-height: 1.65; }
+
+  /* settings */
+  .settings-list { display: flex; flex-direction: column; }
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    width: 100%;
+    padding: 14px 0;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    background: transparent;
+    text-align: left;
+  }
+  .setting-row:first-child { padding-top: 2px; }
+  .setting-row span:first-child { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .setting-row strong { font-size: 14px; font-weight: 600; }
+  .setting-row small { color: var(--muted); font-size: 12px; line-height: 1.5; }
+  .setting-row > span:last-child { color: var(--faint); font-size: 18px; }
+  .setting-row:hover:not(:disabled) strong { color: var(--accent-ink); }
+  .setting-row:disabled { opacity: .45; }
+  .setting-row:disabled small { color: var(--faint); }
+  .setting-row.danger strong { color: var(--danger); }
+  .setting-row.danger > span:last-child { color: #d69a90; }
+  .setting-row.danger:hover:not(:disabled) strong { color: #8f1d13; }
+
+  .category-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+  .category-row {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface-2);
+  }
+  .category-row.is-inactive { opacity: .58; }
+  .cat-color {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+  }
+  .cat-label { min-height: 36px; padding: 6px 9px; font-size: 13px; }
+  .cat-controls { display: flex; align-items: center; gap: 2px; }
+  .cat-control {
+    min-width: 30px;
+    height: 30px;
+    padding: 0 6px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .cat-control:hover:not(:disabled) { border-color: var(--line-strong); color: var(--ink); }
+  .cat-control:disabled { opacity: .3; }
+  .cat-toggle { min-width: 44px; }
+  .category-add { display: flex; gap: 8px; margin-top: 14px; }
+  .category-add .text-input { flex: 1; min-width: 0; }
+  .category-add .primary-btn { width: auto; min-width: 72px; min-height: 42px; padding: 8px 14px; }
+
+  /* import */
+  .import-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .import-grid > div {
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface-2);
+    min-width: 0;
+  }
+  .import-grid span { display: block; color: var(--muted); font-size: 11px; margin-bottom: 3px; }
+  .import-grid strong { display: block; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .import-grid .wide { grid-column: 1 / -1; }
+
+  /* ---------- Stats ---------- */
+  .stats-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-bottom: 14px;
+  }
+  .month-select {
+    min-height: 34px;
+    max-width: 100%;
+    padding: 5px 8px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface-2);
+    color: var(--ink);
+    font-size: 12px;
+  }
+  .theme-select {
+    min-height: 34px;
+    max-width: 118px;
+    padding: 5px 8px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface-2);
+    color: var(--ink);
+    font-size: 12px;
+  }
+  .period-label { margin-left: auto; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .stats-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    padding: 13px 14px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface-2);
+    margin-bottom: 16px;
+  }
+  .summary-item { min-width: 0; }
+  .summary-item span { display: block; margin-bottom: 3px; color: var(--muted); font-size: 11px; }
+  .summary-item strong { display: block; font-size: 14px; font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .chart-card {
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--surface-2);
+  }
+  .chart-card h3 {
+    margin: 0 0 8px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .chart-visual {
+    position: relative;
+    width: min(200px, 100%);
+    aspect-ratio: 1;
+    margin: 2px auto 0;
+  }
+  .donut-svg { display: block; width: 100%; height: 100%; }
+  .donut-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    text-align: center;
+    padding: 0 18%;
+  }
+  .donut-center strong { font-size: 17px; font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .donut-center span { margin-top: 1px; color: var(--muted); font-size: 11px; }
+  .legend { list-style: none; padding: 0; margin: 13px 0 0; display: flex; flex-direction: column; gap: 8px; }
+  .legend li {
+    display: grid;
+    grid-template-columns: 8px minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    font-size: 12px;
+  }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .legend-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .legend-amount { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .legend-pct { min-width: 40px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .chart-empty {
+    min-height: 236px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-align: center;
+  }
+  .empty-ring {
+    width: 142px;
+    height: 142px;
+    border: 15px dashed var(--line);
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+  }
+  .chart-empty p { margin: 0; color: var(--muted); font-size: 12px; }
+
+  /* ---------- Detail ---------- */
+  .day-group { border-bottom: 1px solid var(--line); }
+  .day-group:last-child { border-bottom: 0; }
+  .day-head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 0 9px;
+    background: var(--surface);
+    border-bottom: 1px solid rgba(230, 223, 212, .7);
+  }
+  .day-date { font-size: 12px; font-weight: 600; color: var(--ink); white-space: nowrap; }
+  .day-totals {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 10.5px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .day-count { color: var(--faint); }
+  .detail-body .record-row { padding: 12px 0; }
+  .detail-body .record-row:first-child { border-top: 0; }
+  .empty-detail {
+    padding: 42px 0;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  /* ---------- Toast / banner ---------- */
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(20px + env(safe-area-inset-bottom));
+    z-index: 100;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: calc(100vw - 32px);
+    padding: 11px 14px;
+    border-radius: 12px;
+    background: var(--toast-bg);
+    color: var(--toast-ink);
+    box-shadow: 0 12px 36px rgba(20, 16, 12, .25);
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .toast span { min-width: 0; }
+  .toast button {
+    flex: 0 0 auto;
+    padding: 3px 2px;
+    border: 0;
+    background: transparent;
+    color: var(--toast-action);
+    font-size: 13px;
+    font-weight: 650;
+  }
+  .toast-detail {
+    position: static;
+    transform: none;
+    left: auto;
+    bottom: auto;
+    margin: 0 20px 18px;
+    align-self: stretch;
+  }
+  .banner {
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    padding: 10px 16px;
+    border-bottom: 1px solid #f0c9bf;
+    background: #fff1ed;
+    color: #8a2c1a;
+    text-align: center;
+    font-size: 12px;
+    line-height: 1.55;
+  }
+  .backup-reminder {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    border: 1px solid #d6e3da;
+    border-radius: 12px;
+    background: #edf4ef;
+    color: var(--accent-ink);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .backup-reminder > span { flex: 1; min-width: 0; }
+  .backup-reminder-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+  .backup-reminder button {
+    padding: 4px 6px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--accent-ink);
+    font-size: 12px;
+    font-weight: 650;
+  }
+  .backup-reminder button:hover { background: rgba(47, 93, 80, .08); }
+  .backup-reminder .remind-later { color: var(--muted); font-weight: 500; }
+
+  @media (hover: hover) {
+    .row-action { opacity: 0; }
+    .record-row:hover .row-action,
+    .record-row:focus-within .row-action { opacity: 1; }
+  }
+
+  @media (hover: none), (pointer: coarse) {
+    .row-action { opacity: 1; }
+  }
+
+  @media (max-width: 640px) {
+    .app { padding: 18px 14px 52px; }
+    .app-header { margin-bottom: 16px; }
+    .balance-section { padding-bottom: 20px; }
+    .balance-amount { font-size: 40px; }
+    .entry-card { padding: 16px; border-radius: 18px; }
+    .row-action { opacity: 1; }
+    .dialog:not(.dialog-stats):not(.dialog-detail) {
+      width: calc(100vw - 28px);
+      max-height: calc(100vh - 56px);
+      max-height: calc(100dvh - 56px);
+    }
+    dialog.dialog.dialog-stats,
+    dialog.dialog.dialog-detail {
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      max-width: none;
+      max-height: 100vh;
+      max-height: 100dvh;
+      margin: 0;
+      border: 0;
+      border-radius: 0;
+    }
+    .dialog-head { padding: 16px 16px 12px; }
+    .dialog-body { padding: 16px 16px 20px; }
+    .detail-body { padding: 0 16px 20px; }
+    .detail-toolbar { padding: 10px 16px; }
+    .detail-filter { width: 116px; }
+    .dialog-actions { padding: 12px 16px 16px; }
+    .toast-detail { margin: 0 16px 14px; }
+    .charts { grid-template-columns: 1fr; }
+    .chart-visual { width: 184px; }
+    .chart-empty { min-height: 210px; }
+    .stats-summary { padding: 12px; }
+    .summary-item strong { font-size: 13px; }
+    .day-head { align-items: flex-start; flex-direction: column; gap: 4px; padding-top: 12px; }
+    .day-totals { gap: 7px; }
+  }
+
+  @media (max-width: 380px) {
+    .today-total strong { font-size: 14px; }
+    .summary-item strong { font-size: 12px; }
+    .legend { gap: 7px; }
+    .legend-pct { min-width: 36px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .001ms !important;
+      transition-duration: .001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="storageBanner" class="banner" role="alert" hidden></div>
+
+<div class="app">
+  <header class="app-header">
+    <h1 class="brand">记账本</h1>
+    <button id="settingsBtn" class="icon-btn settings-btn" type="button" aria-label="设置" title="设置">⋯</button>
+  </header>
+
+  <div id="backupReminder" class="backup-reminder" hidden>
+    <span>建议导出备份，避免浏览器数据被清理后丢失。</span>
+    <div class="backup-reminder-actions">
+      <button id="backupNowBtn" type="button">备份</button>
+      <button id="backupLaterBtn" class="remind-later" type="button">稍后</button>
+    </div>
+  </div>
+
+  <main>
+    <section class="balance-section" aria-labelledby="balanceLabel">
+      <div class="balance-top">
+        <div>
+          <div class="balance-label-line">
+            <p id="balanceLabel" class="eyebrow">当前余额</p>
+            <button id="calibrateBtn" class="text-btn balance-calibrate" type="button">校准</button>
+          </div>
+          <p id="balanceAmount" class="balance-amount">¥0.00</p>
+        </div>
+        <div class="balance-actions">
+          <button id="statsBtn" class="text-btn stats-btn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3a9 9 0 1 0 9 9h-9V3Z"/>
+              <path d="M15 3.5A7.5 7.5 0 0 1 20.5 9H15V3.5Z"/>
+            </svg>
+            收支统计
+          </button>
+        </div>
+      </div>
+      <div class="today-totals">
+        <div class="today-total">
+          <span>今日收入</span>
+          <strong id="todayIncome" class="income">+¥0.00</strong>
+        </div>
+        <div class="today-total">
+          <span>今日支出</span>
+          <strong id="todayExpense" class="expense">−¥0.00</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="entry-card" aria-labelledby="entryTitle">
+      <h2 id="entryTitle" class="sr-only">记一笔</h2>
+      <form id="entryForm" novalidate>
+        <div class="field">
+          <span class="field-label" id="directionLabel">收支方向</span>
+          <div class="segmented" role="group" aria-labelledby="directionLabel">
+            <button type="button" class="seg-btn is-active" data-direction="expense" aria-pressed="true">支出</button>
+            <button type="button" class="seg-btn" data-direction="income" aria-pressed="false">收入</button>
+          </div>
+        </div>
+
+        <fieldset class="field">
+          <legend class="field-label">分类</legend>
+          <div id="categoryChips" class="chips" role="radiogroup" aria-label="分类" aria-describedby="categoryHint"></div>
+          <p id="categoryHint" class="hint" role="status" aria-live="polite" hidden>请选择分类</p>
+        </fieldset>
+
+        <div class="field">
+          <label class="field-label" for="amountInput">金额</label>
+          <div class="amount-wrap">
+            <span class="currency" aria-hidden="true">¥</span>
+            <input id="amountInput" class="amount-input" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" aria-describedby="amountError">
+          </div>
+          <p id="amountError" class="error" role="alert" hidden></p>
+        </div>
+
+        <div class="field date-row">
+          <label class="field-label" for="dateInput">日期</label>
+          <input id="dateInput" class="date-input" type="date" aria-describedby="dateError">
+        </div>
+        <p id="dateError" class="error" role="alert" hidden></p>
+
+        <div class="field">
+          <label class="field-label" for="noteInput">备注 <span class="field-optional">可选</span></label>
+          <input id="noteInput" class="text-input" type="text" maxlength="50" autocomplete="off" placeholder="比如：午饭、地铁">
+        </div>
+
+        <button id="submitBtn" class="primary-btn" type="submit" disabled>记一笔</button>
+      </form>
+    </section>
+
+    <section class="today-section" aria-labelledby="todayHeading">
+      <div class="section-head">
+        <h2 id="todayHeading">今日</h2>
+        <button id="expandBtn" class="text-btn" type="button" hidden>展开明细 <span aria-hidden="true">›</span></button>
+      </div>
+      <div id="todayList" class="record-list"></div>
+      <p id="todayEmpty" class="empty-state" hidden>今日暂无记录</p>
+    </section>
+  </main>
+</div>
+
+<dialog id="settingsDialog" class="dialog" aria-labelledby="settingsTitle">
+  <div class="dialog-head">
+    <h2 id="settingsTitle">设置</h2>
+    <button type="button" class="icon-btn" data-close aria-label="关闭设置">✕</button>
+  </div>
+  <div class="dialog-body">
+    <div class="settings-list">
+      <button id="exportBtn" class="setting-row" type="button">
+        <span><strong>导出备份</strong><small>JSON 文件，包含全部记录与分类</small></span>
+        <span aria-hidden="true">›</span>
+      </button>
+      <button id="csvExportBtn" class="setting-row" type="button">
+        <span><strong>导出 CSV</strong><small>用于 Excel 查看，含日期、方向、分类、金额、备注、余额</small></span>
+        <span aria-hidden="true">›</span>
+      </button>
+      <button id="importBtn" class="setting-row" type="button">
+        <span><strong>导入备份</strong><small>覆盖当前数据，导入前自动备份</small></span>
+        <span aria-hidden="true">›</span>
+      </button>
+      <button id="openingBtn" class="setting-row" type="button">
+        <span><strong>设置期初余额</strong><small id="openingHint">仅在没有记录时可修改</small></span>
+        <span aria-hidden="true">›</span>
+      </button>
+      <button id="categoryBtn" class="setting-row" type="button">
+        <span><strong>分类管理</strong><small>新增、改名、排序、停用、改色</small></span>
+        <span aria-hidden="true">›</span>
+      </button>
+      <button id="clearBtn" class="setting-row danger" type="button">
+        <span><strong>清空所有数据</strong><small>删除全部记录，清空前自动备份</small></span>
+        <span aria-hidden="true">›</span>
+      </button>
+      <div class="setting-row">
+        <span><strong>主题</strong><small>跟随系统 / 浅色 / 深色</small></span>
+        <select id="themeSelect" class="theme-select" aria-label="主题">
+          <option value="system">跟随系统</option>
+          <option value="light">浅色</option>
+          <option value="dark">深色</option>
+        </select>
+      </div>
+      <button id="installBtn" class="setting-row" type="button">
+        <span><strong>安装到桌面</strong><small id="installHint">用浏览器菜单添加到主屏幕</small></span>
+        <span aria-hidden="true">›</span>
+      </button>
+    </div>
+    <p class="muted-note">数据只保存在这个浏览器里，不会上传。清除浏览器数据前，请先导出备份。</p>
+    <p class="muted-note">版本 V2.0 · 本地单页应用</p>
+    <input id="fileInput" type="file" accept="application/json,.json" hidden>
+  </div>
+</dialog>
+
+<dialog id="openingDialog" class="dialog dialog-small" aria-labelledby="openingTitle">
+  <form id="openingForm" novalidate>
+    <div class="dialog-head">
+      <h2 id="openingTitle">设置期初余额</h2>
+    </div>
+    <div class="dialog-body">
+      <p id="openingDesc" class="dialog-desc">这是账本的起始金额，只设置一次。之后每笔收支会自动增减。</p>
+      <label class="field-label" for="openingInput">当前余额</label>
+      <div class="amount-wrap">
+        <span class="currency" aria-hidden="true">¥</span>
+        <input id="openingInput" class="amount-input" type="text" inputmode="decimal" autocomplete="off" value="0.00" aria-describedby="openingError">
+      </div>
+      <p id="openingError" class="error" role="alert" hidden></p>
+    </div>
+    <div class="dialog-actions">
+      <button id="openingSkipBtn" class="ghost-btn" type="button">跳过</button>
+      <button class="primary-btn opening-save" type="submit">保存</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="editDialog" class="dialog" aria-labelledby="editTitle">
+  <form id="editForm" novalidate>
+    <div class="dialog-head">
+      <h2 id="editTitle">编辑记录</h2>
+      <button type="button" class="icon-btn" data-close aria-label="关闭编辑">✕</button>
+    </div>
+    <div class="dialog-body">
+      <div class="field">
+        <span class="field-label" id="editDirectionLabel">收支方向</span>
+        <div class="segmented" role="group" aria-labelledby="editDirectionLabel">
+          <button type="button" class="seg-btn" data-edit-direction="expense" aria-pressed="false">支出</button>
+          <button type="button" class="seg-btn" data-edit-direction="income" aria-pressed="false">收入</button>
+        </div>
+      </div>
+
+      <fieldset class="field">
+        <legend class="field-label">分类</legend>
+        <div id="editCategoryChips" class="chips" role="radiogroup" aria-label="分类" aria-describedby="editCategoryHint"></div>
+        <p id="editCategoryHint" class="hint" role="status" aria-live="polite" hidden>请选择分类</p>
+      </fieldset>
+
+      <div class="field">
+        <label class="field-label" for="editAmountInput">金额</label>
+        <div class="amount-wrap">
+          <span class="currency" aria-hidden="true">¥</span>
+          <input id="editAmountInput" class="amount-input" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" aria-describedby="editAmountError">
+        </div>
+        <p id="editAmountError" class="error" role="alert" hidden></p>
+      </div>
+
+      <div class="field date-row">
+        <label class="field-label" for="editDateInput">日期</label>
+        <input id="editDateInput" class="date-input" type="date" aria-describedby="editDateError">
+      </div>
+      <p id="editDateError" class="error" role="alert" hidden></p>
+
+      <div class="field">
+        <label class="field-label" for="editNoteInput">备注 <span class="field-optional">可选</span></label>
+        <input id="editNoteInput" class="text-input" type="text" maxlength="50" autocomplete="off">
+      </div>
+      <p id="editError" class="error" role="alert" hidden></p>
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="ghost-btn" data-close>取消</button>
+      <button id="editSaveBtn" class="primary-btn" type="submit" disabled>保存</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="calibrationDialog" class="dialog dialog-small" aria-labelledby="calibrationTitle">
+  <form id="calibrationForm" novalidate>
+    <div class="dialog-head">
+      <h2 id="calibrationTitle">校准余额</h2>
+      <button type="button" class="icon-btn" data-close aria-label="关闭校准">✕</button>
+    </div>
+    <div class="dialog-body">
+      <p class="dialog-desc">输入现在真实的现金/账户余额。系统会生成一条「校准」记录，只影响余额，不计入收入和支出统计。</p>
+      <div class="calibration-current">
+        <span>系统当前余额</span>
+        <strong id="calibrationCurrent">¥0.00</strong>
+      </div>
+      <label class="field-label" for="calibrationInput">实际余额</label>
+      <div class="amount-wrap">
+        <span class="currency" aria-hidden="true">¥</span>
+        <input id="calibrationInput" class="amount-input" type="text" inputmode="decimal" autocomplete="off" aria-describedby="calibrationError">
+      </div>
+      <p id="calibrationDiff" class="calibration-diff" aria-live="polite"></p>
+      <p id="calibrationError" class="error" role="alert" hidden></p>
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="ghost-btn" data-close>取消</button>
+      <button id="calibrationConfirm" class="primary-btn" type="submit" disabled>确认校准</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="clearDialog" class="dialog dialog-small" aria-labelledby="clearTitle">
+  <form id="clearForm" novalidate>
+    <div class="dialog-head">
+      <h2 id="clearTitle">清空所有数据</h2>
+      <button type="button" class="icon-btn" data-close aria-label="关闭清空">✕</button>
+    </div>
+    <div class="dialog-body">
+      <p class="dialog-desc">将删除全部记录和期初余额，且不可撤销。清空前会自动下载一份当前备份。</p>
+      <label class="field-label" for="clearConfirmInput">输入「清空」确认</label>
+      <input id="clearConfirmInput" class="text-input" type="text" autocomplete="off" placeholder="清空">
+      <p id="clearError" class="error" role="alert" hidden></p>
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="ghost-btn" data-close>取消</button>
+      <button id="clearConfirmBtn" class="danger-btn" type="submit" disabled>清空</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="categoryDialog" class="dialog" aria-labelledby="categoryTitle">
+  <div class="dialog-head">
+    <h2 id="categoryTitle">分类管理</h2>
+    <button type="button" class="icon-btn" data-close aria-label="关闭分类管理">✕</button>
+  </div>
+  <div class="dialog-body">
+    <div class="segmented" role="group" aria-label="分类方向" id="categoryTypeToggle">
+      <button type="button" class="seg-btn is-active" data-cat-type="expense" aria-pressed="true">支出分类</button>
+      <button type="button" class="seg-btn" data-cat-type="income" aria-pressed="false">收入分类</button>
+    </div>
+    <div id="categoryList" class="category-list"></div>
+    <div class="category-add">
+      <input id="newCategoryLabel" class="text-input" type="text" maxlength="10" autocomplete="off" placeholder="新分类名称" aria-label="新分类名称">
+      <button id="addCategoryBtn" class="primary-btn" type="button">添加</button>
+    </div>
+    <p id="categoryManagerError" class="error" role="alert" hidden></p>
+    <p class="muted-note">停用后不再出现在记账表单，但历史记录和统计会保留。每种收支方向至少保留一个启用分类。</p>
+  </div>
+</dialog>
+
+<dialog id="importDialog" class="dialog dialog-small" aria-labelledby="importTitle">
+  <div class="dialog-head">
+    <h2 id="importTitle">导入备份</h2>
+    <button type="button" class="icon-btn" data-close aria-label="关闭导入">✕</button>
+  </div>
+  <div class="dialog-body">
+    <div id="importPreview"></div>
+    <p id="importError" class="error" role="alert" hidden></p>
+    <p class="warning-note">将覆盖当前全部数据。导入前会自动下载当前备份。</p>
+  </div>
+  <div class="dialog-actions">
+    <button type="button" class="ghost-btn" data-close>取消</button>
+    <button id="importConfirmBtn" class="primary-btn" type="button">覆盖并导入</button>
+  </div>
+</dialog>
+
+<dialog id="recoveryDialog" class="dialog dialog-small" aria-labelledby="recoveryTitle">
+  <div class="dialog-head">
+    <h2 id="recoveryTitle">数据读取失败</h2>
+  </div>
+  <div class="dialog-body">
+    <p class="dialog-desc">本地数据可能已损坏。请先下载原始数据，再重置账本。</p>
+    <p id="recoveryDetail" class="error-text"></p>
+  </div>
+  <div class="dialog-actions">
+    <button id="downloadRawBtn" class="ghost-btn" type="button">下载原始数据</button>
+    <button id="resetRawBtn" class="danger-btn" type="button">重置账本</button>
+  </div>
+</dialog>
+
+<dialog id="statsDialog" class="dialog dialog-stats" aria-labelledby="statsTitle">
+  <div class="dialog-head">
+    <h2 id="statsTitle">收支统计</h2>
+    <button type="button" class="icon-btn" data-close aria-label="关闭统计">✕</button>
+  </div>
+  <div class="dialog-body">
+    <div class="stats-toolbar">
+      <div class="segmented segmented-small" role="group" aria-label="统计周期" id="periodToggle">
+        <button type="button" class="seg-btn is-active" data-period="month" aria-pressed="true">本月</button>
+        <button type="button" class="seg-btn" data-period="history" aria-pressed="false">历史</button>
+        <button type="button" class="seg-btn" data-period="all" aria-pressed="false">全部</button>
+      </div>
+      <select id="statsMonthSelect" class="month-select" aria-label="选择历史月份" hidden></select>
+      <span id="periodLabel" class="period-label"></span>
+    </div>
+    <div id="statsSummary" class="stats-summary"></div>
+    <div id="statsCharts" class="charts"></div>
+  </div>
+</dialog>
+
+<dialog id="detailDialog" class="dialog dialog-detail" aria-labelledby="detailTitle">
+  <div class="dialog-head">
+    <div>
+      <h2 id="detailTitle">全部明细</h2>
+      <p id="detailCount" class="dialog-sub"></p>
+    </div>
+    <button type="button" class="icon-btn" data-close aria-label="关闭明细">✕</button>
+  </div>
+  <div class="detail-toolbar">
+    <input id="detailSearch" class="text-input detail-search" type="search" autocomplete="off" placeholder="搜索备注、分类或金额" aria-label="搜索明细">
+    <select id="detailCategoryFilter" class="month-select detail-filter" aria-label="按分类筛选"></select>
+  </div>
+  <div id="detailBody" class="dialog-body detail-body"></div>
+  <div id="detailToast" class="toast toast-detail" role="status" aria-live="polite" hidden>
+    <span id="detailToastMessage"></span>
+    <button id="detailToastAction" type="button" hidden>撤销</button>
+  </div>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden>
+  <span id="toastMessage"></span>
+  <button id="toastAction" type="button" hidden>撤销</button>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ============================================================
+     Constants
+     ============================================================ */
+  const STORAGE_KEY = 'jzb.ledger';
+  const LEGACY_KEY = 'jzb.ledger.v1';
+  const BACKUP_META_KEY = 'jzb.backupMeta';
+  const BACKUP_SNOOZE_KEY = 'jzb.backupSnoozeUntil';
+  const THEME_KEY = 'jzb.theme';
+  const DATA_VERSION = 2;
+  const MAX_CENTS = 999999999; // ¥9,999,999.99
+  const MAX_RECORDS = 20000;
+  const MIN_DATE = '2000-01-01';
+  const REMINDER_SNOOZE_MS = 3 * 24 * 60 * 60 * 1000;
+
+  const DEFAULT_CATEGORIES = [
+    { key: 'food',          label: '饮食',     type: 'expense', color: '#D97757' },
+    { key: 'transport',     label: '交通',     type: 'expense', color: '#2A9D8F' },
+    { key: 'game',          label: '游戏',     type: 'expense', color: '#7B6D8D' },
+    { key: 'shopping',      label: '购物',     type: 'expense', color: '#C99A2E' },
+    { key: 'other_expense', label: '其他支出', type: 'expense', color: '#8D99AE' },
+    { key: 'salary',        label: '工资',     type: 'income',  color: '#3D6B8E' },
+    { key: 'family_gift',   label: '亲人赠与', type: 'income',  color: '#C97C8A' },
+    { key: 'other_income',  label: '其他收入', type: 'income',  color: '#A8A29E' }
+  ];
+  const CATEGORY_COLOR_PALETTE = [
+    '#D97757', '#2A9D8F', '#7B6D8D', '#C99A2E', '#8D99AE',
+    '#3D6B8E', '#C97C8A', '#A8A29E', '#5B8C5A', '#B07AA1',
+    '#E15759', '#76B7B2', '#EDC948', '#FF9DA7', '#9C755F'
+  ];
+
+  const TRASH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M7 7l1 13h8l1-13"/><path d="M10 11v5M14 11v5"/></svg>';
+  const EDIT_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3Z"/><path d="M14.5 6.5l3 3"/></svg>';
+
+  /* ============================================================
+     State
+     ============================================================ */
+  let state = null;
+  let direction = 'expense';
+  let selectedCategory = '';
+  let selectedDate = '';
+  let dateTouched = false;
+  let todayCache = '';
+  let statsPeriod = 'month';
+  let statsMonth = '';
+  let detailQuery = '';
+  let detailCategory = '';
+  let openingMode = 'first';
+  let pendingImport = null;
+  let corruptedRaw = null;
+  let saveInProgress = false;
+  let editRecordId = null;
+  let editDirection = 'expense';
+  let editCategory = '';
+  let categoryManagerDirection = 'expense';
+  let deferredInstallPrompt = null;
+
+  let globalToastTimer = null;
+  let globalUndoRecord = null;
+  let detailToastTimer = null;
+  let detailUndoRecord = null;
+
+  /* ============================================================
+     DOM
+     ============================================================ */
+  const els = {};
+
+  function cacheDom() {
+    const ids = [
+      'storageBanner', 'settingsBtn', 'balanceAmount', 'todayIncome', 'todayExpense',
+      'statsBtn', 'calibrateBtn', 'entryForm', 'categoryChips', 'categoryHint', 'amountInput',
+      'amountError', 'dateInput', 'dateError', 'noteInput', 'submitBtn', 'todayHeading',
+      'expandBtn', 'todayList', 'todayEmpty', 'settingsDialog', 'exportBtn',
+      'csvExportBtn', 'importBtn', 'openingBtn', 'openingHint', 'clearBtn', 'fileInput',
+      'categoryBtn', 'categoryDialog', 'categoryTypeToggle', 'categoryList',
+      'newCategoryLabel', 'addCategoryBtn', 'categoryManagerError', 'themeSelect',
+      'installBtn', 'installHint',
+      'openingDialog', 'openingForm', 'openingTitle', 'openingDesc', 'openingInput',
+      'openingError', 'openingSkipBtn', 'editDialog', 'editForm', 'editTitle',
+      'editCategoryChips', 'editCategoryHint', 'editAmountInput', 'editAmountError',
+      'editDateInput', 'editDateError', 'editNoteInput', 'editError', 'editSaveBtn',
+      'calibrationDialog', 'calibrationForm', 'calibrationCurrent', 'calibrationInput',
+      'calibrationDiff', 'calibrationError', 'calibrationConfirm', 'clearDialog',
+      'clearForm', 'clearConfirmInput', 'clearError', 'clearConfirmBtn',
+      'importDialog', 'importPreview', 'importError',
+      'importConfirmBtn', 'recoveryDialog', 'recoveryDetail', 'downloadRawBtn',
+      'resetRawBtn', 'statsDialog', 'periodLabel', 'statsMonthSelect', 'statsSummary', 'statsCharts',
+      'detailDialog', 'detailCount', 'detailBody', 'detailSearch', 'detailCategoryFilter',
+      'detailToast', 'detailToastMessage', 'detailToastAction', 'toast', 'toastMessage',
+      'toastAction', 'backupReminder', 'backupNowBtn', 'backupLaterBtn'
+    ];
+    ids.forEach(function (id) { els[id] = document.getElementById(id); });
+  }
+
+  /* ============================================================
+     Date / money helpers
+     ============================================================ */
+  function pad2(value) { return String(value).padStart(2, '0'); }
+
+  function dateKey(date) {
+    const d = date || new Date();
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  }
+
+  function todayKey() { return dateKey(new Date()); }
+
+  function yesterdayKey() {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return dateKey(d);
+  }
+
+  function formatMMDD(key) { return key.slice(5); }
+
+  function formatMonth(key) {
+    const parts = key.split('-');
+    return parts[0] + '年' + Number(parts[1]) + '月';
+  }
+
+  function weekdayName(key) {
+    const d = new Date(key + 'T00:00:00');
+    return ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][d.getDay()];
+  }
+
+  function isValidDateKey(key) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) return false;
+    const d = new Date(key + 'T00:00:00');
+    return !Number.isNaN(d.getTime()) && dateKey(d) === key;
+  }
+
+  function isValidEntryDate(key) {
+    return isValidDateKey(key) && key >= MIN_DATE && key <= todayCache;
+  }
+
+  function formatMoney(cents) {
+    const amount = Math.abs(cents) / 100;
+    const formatted = new Intl.NumberFormat('zh-CN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount);
+    return '¥' + formatted;
+  }
+
+  function formatSignedMoney(cents) {
+    if (cents < 0) return '−' + formatMoney(cents);
+    return formatMoney(cents);
+  }
+
+  function formatPlusMoney(cents) { return '+' + formatMoney(cents); }
+  function formatMinusMoney(cents) { return '−' + formatMoney(cents); }
+
+  function formatPlusOrZero(cents) {
+    return cents > 0 ? '+' + formatMoney(cents) : formatMoney(0);
+  }
+
+  function formatMinusOrZero(cents) {
+    return cents > 0 ? '−' + formatMoney(cents) : formatMoney(0);
+  }
+
+  function formatNet(cents) {
+    if (cents === 0) return formatMoney(0);
+    return cents > 0 ? '+' + formatMoney(cents) : '−' + formatMoney(cents);
+  }
+
+  function parseAmount(raw, options) {
+    const allowZero = options && options.allowZero;
+    const text = String(raw == null ? '' : raw).trim();
+    if (!/^\d+(?:\.\d{0,2})?$/.test(text)) return null;
+    const parts = text.split('.');
+    const integerPart = parts[0];
+    if (integerPart.length > 9) return null;
+    const decimalPart = (parts[1] || '') + '00';
+    const cents = Number(integerPart) * 100 + Number(decimalPart.slice(0, 2));
+    if (!Number.isSafeInteger(cents)) return null;
+    if (allowZero ? cents < 0 : cents <= 0) return null;
+    if (cents > MAX_CENTS) return null;
+    return cents;
+  }
+
+  function amountErrorMessage(raw) {
+    const text = String(raw == null ? '' : raw).trim();
+    if (!text) return '请输入金额';
+    if (!/^\d+(?:\.\d{0,2})?$/.test(text)) return '金额最多保留两位小数';
+    const cents = parseAmount(text);
+    if (cents === null) return '单笔金额不能超过 9,999,999.99';
+    if (cents === 0) return '金额需大于 0';
+    return '请输入有效金额';
+  }
+
+  function sanitizeAmount(raw) {
+    let value = String(raw == null ? '' : raw).replace(/[^\d.]/g, '');
+    const firstDot = value.indexOf('.');
+    if (firstDot !== -1) {
+      value = value.slice(0, firstDot + 1) + value.slice(firstDot + 1).replace(/\./g, '');
+      const parts = value.split('.');
+      if (parts[1] !== undefined && parts[1].length > 2) {
+        value = parts[0] + '.' + parts[1].slice(0, 2);
+      }
+    }
+    if (value.charAt(0) === '.') value = '0' + value;
+    return value;
+  }
+
+  function sanitizeSignedAmount(raw) {
+    let value = String(raw == null ? '' : raw).replace(/[^\d.-]/g, '');
+    const negative = value.charAt(0) === '-';
+    value = sanitizeAmount(value.replace(/-/g, ''));
+    return negative ? '-' + value : value;
+  }
+
+  function parseSignedAmount(raw) {
+    const text = String(raw == null ? '' : raw).trim();
+    if (!/^-?\d+(?:\.\d{0,2})?$/.test(text)) return null;
+    const negative = text.charAt(0) === '-';
+    const cents = parseAmount(negative ? text.slice(1) : text, { allowZero: true });
+    if (cents === null) return null;
+    return negative ? -cents : cents;
+  }
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, function (ch) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+    });
+  }
+
+  function uid() {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+      return window.crypto.randomUUID();
+    }
+    return 'r-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+  }
+
+  function compactDateTime(date) {
+    return date.getFullYear() + pad2(date.getMonth() + 1) + pad2(date.getDate()) +
+      '-' + pad2(date.getHours()) + pad2(date.getMinutes());
+  }
+
+  function getStoredTheme() {
+    try {
+      const value = localStorage.getItem(THEME_KEY);
+      return value === 'light' || value === 'dark' || value === 'system' ? value : 'system';
+    } catch (error) {
+      return 'system';
+    }
+  }
+
+  function applyTheme(preference) {
+    const theme = preference === 'light' || preference === 'dark' ? preference : 'system';
+    const dark = theme === 'dark' ||
+      (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.content = dark ? '#151412' : '#f5f2ec';
+    if (els.themeSelect) els.themeSelect.value = theme;
+    try { localStorage.setItem(THEME_KEY, theme); } catch (ignored) {}
+  }
+
+  function initTheme() {
+    applyTheme(getStoredTheme());
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = function () {
+      if (getStoredTheme() === 'system') applyTheme('system');
+    };
+    if (typeof media.addEventListener === 'function') media.addEventListener('change', handleChange);
+    else if (typeof media.addListener === 'function') media.addListener(handleChange);
+  }
+
+  function updateInstallState() {
+    if (!els.installHint) return;
+    const standalone = window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true;
+    if (standalone) els.installHint.textContent = '已安装，可独立打开';
+    else if (deferredInstallPrompt) els.installHint.textContent = '离线使用，独立窗口';
+    else els.installHint.textContent = '用浏览器菜单添加到主屏幕';
+  }
+
+  function registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) return;
+    if (location.protocol !== 'http:' && location.protocol !== 'https:') return;
+    const doRegister = function () {
+      navigator.serviceWorker.register('./sw.js').catch(function () {});
+    };
+    if (document.readyState === 'complete') doRegister();
+    else window.addEventListener('load', doRegister, { once: true });
+  }
+
+  /* ============================================================
+     Data model
+     ============================================================ */
+  function defaultCategories() {
+    const counts = { expense: 0, income: 0 };
+    return DEFAULT_CATEGORIES.map(function (category) {
+      return {
+        key: category.key,
+        label: category.label,
+        type: category.type,
+        color: category.color,
+        order: counts[category.type]++,
+        active: true
+      };
+    });
+  }
+
+  function normalizeCategories(raw) {
+    if (!Array.isArray(raw) || raw.length === 0) return null;
+    const seenKeys = Object.create(null);
+    const normalized = raw.map(function (rawCategory, index) {
+      if (!rawCategory || typeof rawCategory !== 'object') throw new Error('分类配置无效');
+      const key = typeof rawCategory.key === 'string' ? rawCategory.key : '';
+      if (!/^[a-z0-9_]{1,64}$/.test(key) || seenKeys[key]) throw new Error('分类 key 无效或重复');
+      seenKeys[key] = true;
+      const type = rawCategory.type;
+      if (type !== 'expense' && type !== 'income') throw new Error('分类方向无效');
+      const label = typeof rawCategory.label === 'string' ? rawCategory.label.trim() : '';
+      if (!label || label.length > 10) throw new Error('分类名称需为 1–10 个字');
+      const color = typeof rawCategory.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(rawCategory.color)
+        ? rawCategory.color : '#8D99AE';
+      const order = Number.isFinite(rawCategory.order) ? rawCategory.order : index;
+      return {
+        key: key,
+        label: label,
+        type: type,
+        color: color,
+        order: order,
+        active: rawCategory.active !== false
+      };
+    });
+
+    ['expense', 'income'].forEach(function (type) {
+      const list = normalized.filter(function (category) { return category.type === type; })
+        .sort(function (a, b) { return a.order - b.order || a.label.localeCompare(b.label, 'zh-CN'); });
+      if (!list.length) throw new Error('每种收支方向至少需要一个分类');
+      if (!list.some(function (category) { return category.active; })) {
+        throw new Error('每种收支方向至少需要启用一个分类');
+      }
+      list.forEach(function (category, index) { category.order = index; });
+    });
+
+    return normalized;
+  }
+
+  function buildCategoryMap(categories) {
+    const map = Object.create(null);
+    categories.forEach(function (category) { map[category.key] = category; });
+    return map;
+  }
+
+  function categoryByKey(key) {
+    if (!state || !Array.isArray(state.categories)) return null;
+    return state.categories.find(function (category) { return category.key === key; }) || null;
+  }
+
+  function categoriesForType(type, includeInactive) {
+    if (!state || !Array.isArray(state.categories)) return [];
+    return state.categories
+      .filter(function (category) {
+        return category.type === type && (includeInactive || category.active);
+      })
+      .sort(function (a, b) { return a.order - b.order; });
+  }
+
+  function pickCategoryColor(type) {
+    const used = new Set(
+      (state.categories || [])
+        .filter(function (category) { return category.type === type; })
+        .map(function (category) { return category.color.toLowerCase(); })
+    );
+    const available = CATEGORY_COLOR_PALETTE.find(function (color) { return !used.has(color.toLowerCase()); });
+    return available || CATEGORY_COLOR_PALETTE[(state.categories || []).length % CATEGORY_COLOR_PALETTE.length];
+  }
+
+  function makeCategoryKey() {
+    let key;
+    do {
+      key = 'uc_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+    } while ((state.categories || []).some(function (category) { return category.key === key; }));
+    return key;
+  }
+
+  function emptyState() {
+    return {
+      app: 'jzb',
+      version: DATA_VERSION,
+      openingBalance: 0,
+      openingBalanceAt: new Date().toISOString(),
+      categories: defaultCategories(),
+      records: []
+    };
+  }
+
+  function deltaFor(record) {
+    if (record.type === 'income') return record.amount;
+    if (record.type === 'expense') return -record.amount;
+    return record.amount; // adjust
+  }
+
+  function currentBalance(target) {
+    const data = target || state;
+    return data.records.reduce(function (balance, record) {
+      return balance + deltaFor(record);
+    }, data.openingBalance);
+  }
+
+  function compareAsc(a, b) {
+    if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+    if (a.createdAt !== b.createdAt) return a.createdAt < b.createdAt ? -1 : 1;
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+  }
+
+  function compareDesc(a, b) { return compareAsc(b, a); }
+
+  function recomputeBalances(target) {
+    const ordered = target.records.slice().sort(compareAsc);
+    let balance = target.openingBalance;
+    ordered.forEach(function (record) {
+      balance += deltaFor(record);
+      record.balanceAfter = balance;
+    });
+    return target;
+  }
+
+  function todayTotals() {
+    let income = 0;
+    let expense = 0;
+    state.records.forEach(function (record) {
+      if (record.date !== todayCache) return;
+      if (record.type === 'income') income += record.amount;
+      else if (record.type === 'expense') expense += record.amount;
+    });
+    return { income: income, expense: expense };
+  }
+
+  function hasHistory() {
+    return state.records.some(function (record) { return record.date < todayCache; });
+  }
+
+  function normalizeLoadedState(rawData) {
+    if (!rawData || typeof rawData !== 'object' || Array.isArray(rawData)) {
+      throw new Error('根结构不是对象');
+    }
+    if (rawData.app && rawData.app !== 'jzb') throw new Error('不是记账本数据');
+    const version = Number(rawData.version == null ? 1 : rawData.version);
+    if (version !== 1 && version !== 2) throw new Error('数据版本不受支持');
+    if (!Number.isInteger(rawData.openingBalance) || Math.abs(rawData.openingBalance) > MAX_CENTS) {
+      throw new Error('期初余额无效');
+    }
+    if (!Array.isArray(rawData.records)) throw new Error('记录列表无效');
+    if (rawData.records.length > MAX_RECORDS) throw new Error('记录数量超过上限');
+
+    const categories = normalizeCategories(rawData.categories) || defaultCategories();
+    const categoryMap = buildCategoryMap(categories);
+    const today = todayKey();
+    const seenIds = Object.create(null);
+    const records = rawData.records.map(function (rawRecord, index) {
+      if (!rawRecord || typeof rawRecord !== 'object') throw new Error('第 ' + (index + 1) + ' 条记录无效');
+      const date = String(rawRecord.date || '');
+      if (!isValidDateKey(date) || date > today || date < MIN_DATE) {
+        throw new Error('第 ' + (index + 1) + ' 条日期无效');
+      }
+      const type = rawRecord.type;
+      if (type !== 'income' && type !== 'expense' && type !== 'adjust') {
+        throw new Error('第 ' + (index + 1) + ' 条方向无效');
+      }
+      const amount = rawRecord.amount;
+      if (!Number.isInteger(amount) || Math.abs(amount) > MAX_CENTS) {
+        throw new Error('第 ' + (index + 1) + ' 条金额无效');
+      }
+      if (type === 'adjust') {
+        if (amount === 0) throw new Error('第 ' + (index + 1) + ' 条校准金额不能为 0');
+      } else if (amount <= 0) {
+        throw new Error('第 ' + (index + 1) + ' 条金额需大于 0');
+      }
+
+      let category;
+      if (type !== 'adjust') {
+        category = rawRecord.category;
+        let cat = categoryMap[category];
+        if (version === 1 && (!cat || cat.type !== type)) {
+          category = type === 'income' ? 'other_income' : 'other_expense';
+          cat = categoryMap[category];
+        }
+        if (!cat || cat.type !== type) {
+          throw new Error('第 ' + (index + 1) + ' 条分类无效');
+        }
+      }
+
+      let id = typeof rawRecord.id === 'string' && rawRecord.id && rawRecord.id.length <= 200
+        ? rawRecord.id : uid();
+      if (seenIds[id]) id = uid();
+      seenIds[id] = true;
+
+      const note = typeof rawRecord.note === 'string' && rawRecord.note
+        ? rawRecord.note.slice(0, 50) : undefined;
+      const createdAt = typeof rawRecord.createdAt === 'string' && !Number.isNaN(Date.parse(rawRecord.createdAt))
+        ? rawRecord.createdAt : new Date(date + 'T12:00:00').toISOString();
+      const updatedAt = typeof rawRecord.updatedAt === 'string' && !Number.isNaN(Date.parse(rawRecord.updatedAt))
+        ? rawRecord.updatedAt : createdAt;
+
+      const record = {
+        id: id,
+        date: date,
+        type: type,
+        amount: amount,
+        balanceAfter: 0,
+        createdAt: createdAt,
+        updatedAt: updatedAt
+      };
+      if (category) record.category = category;
+      if (note) record.note = note;
+      return record;
+    });
+
+    const next = {
+      app: 'jzb',
+      version: DATA_VERSION,
+      openingBalance: rawData.openingBalance,
+      openingBalanceAt: typeof rawData.openingBalanceAt === 'string' &&
+        !Number.isNaN(Date.parse(rawData.openingBalanceAt))
+        ? rawData.openingBalanceAt : new Date().toISOString(),
+      categories: categories,
+      records: records
+    };
+    recomputeBalances(next);
+    return next;
+  }
+
+  /* ============================================================
+     Storage
+     ============================================================ */
+  function showStorageBanner(message) {
+    els.storageBanner.textContent = message;
+    els.storageBanner.hidden = false;
+  }
+
+  function hideStorageBanner() {
+    els.storageBanner.hidden = true;
+  }
+
+  function saveState(next) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      try { localStorage.removeItem(LEGACY_KEY); } catch (ignored) {}
+      hideStorageBanner();
+      return true;
+    } catch (error) {
+      showStorageBanner('本地保存失败，请立即导出备份。数据可能无法在关闭页面后保留。');
+      return false;
+    }
+  }
+
+  function commitState(next) {
+    recomputeBalances(next);
+    if (!saveState(next)) return false;
+    state = next;
+    return true;
+  }
+
+  function loadState() {
+    let raw = null;
+    let key = null;
+    try {
+      raw = localStorage.getItem(STORAGE_KEY);
+      key = STORAGE_KEY;
+      if (!raw) {
+        raw = localStorage.getItem(LEGACY_KEY);
+        key = LEGACY_KEY;
+      }
+    } catch (error) {
+      showStorageBanner('浏览器本地存储不可用，数据无法保存。请关闭无痕模式或更换浏览器。');
+      return { state: null, unavailable: true };
+    }
+    if (!raw) return { state: null };
+
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (error) {
+      return { corrupted: true, raw: raw, error: 'JSON 解析失败' };
+    }
+
+    try {
+      const next = normalizeLoadedState(parsed);
+      if (key === LEGACY_KEY || Number(parsed.version == null ? 1 : parsed.version) === 1) {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+          localStorage.removeItem(LEGACY_KEY);
+        } catch (ignored) {
+          showStorageBanner('数据已读取，但迁移保存失败。请导出备份。');
+        }
+      }
+      return { state: next };
+    } catch (error) {
+      return { corrupted: true, raw: raw, error: error.message || '数据结构校验失败' };
+    }
+  }
+
+  /* ============================================================
+     Rendering: home
+     ============================================================ */
+  function recordLabel(record) {
+    if (record.type === 'adjust') return '校准';
+    const category = categoryByKey(record.category);
+    return category ? category.label : '未分类';
+  }
+
+  function recordAmountText(record) {
+    if (record.type === 'income') return formatPlusMoney(record.amount);
+    if (record.type === 'expense') return formatMinusMoney(record.amount);
+    return record.amount < 0 ? formatMinusMoney(record.amount) : formatPlusMoney(record.amount);
+  }
+
+  function recordAmountClass(record) {
+    if (record.type === 'income') return 'income';
+    if (record.type === 'expense') return 'expense';
+    return 'adjust';
+  }
+
+  function rowActions(record, label) {
+    const editable = record.type !== 'adjust';
+    const editButton = editable
+      ? '<button type="button" class="row-action edit-btn" data-edit="' + escapeHtml(record.id) + '" aria-label="编辑' + escapeHtml(label) + '记录 ' + recordAmountText(record) + '">' + EDIT_ICON + '</button>'
+      : '';
+    return '<div class="row-actions">' + editButton +
+      '<button type="button" class="row-action delete-btn" data-delete="' + escapeHtml(record.id) + '" aria-label="删除' + escapeHtml(label) + '记录 ' + recordAmountText(record) + '">' + TRASH_ICON + '</button>' +
+      '</div>';
+  }
+
+  function todayRow(record) {
+    const label = recordLabel(record);
+    const editable = record.type !== 'adjust';
+    const note = record.note && editable ? '<span class="record-note">' + escapeHtml(record.note) + '</span>' : '';
+    return '' +
+      '<div class="record-row" data-id="' + escapeHtml(record.id) + '" data-editable="' + editable + '">' +
+        '<div class="record-main">' +
+          '<div class="record-meta">' +
+            '<span class="cat-tag">' + escapeHtml(label) + '</span>' +
+            note +
+          '</div>' +
+          '<div class="record-amount ' + recordAmountClass(record) + '">' + recordAmountText(record) + '</div>' +
+        '</div>' +
+        rowActions(record, label) +
+      '</div>';
+  }
+
+  function renderHome() {
+    const balance = currentBalance();
+    els.balanceAmount.textContent = formatSignedMoney(balance);
+    els.balanceAmount.classList.toggle('negative', balance < 0);
+
+    const totals = todayTotals();
+    els.todayIncome.textContent = formatPlusMoney(totals.income);
+    els.todayExpense.textContent = formatMinusMoney(totals.expense);
+
+    const todayRecords = state.records
+      .filter(function (record) { return record.date === todayCache; })
+      .sort(compareDesc);
+
+    els.todayHeading.textContent = todayRecords.length
+      ? '今日 · ' + formatMMDD(todayCache) + ' · ' + todayRecords.length + ' 笔'
+      : '今日 · ' + formatMMDD(todayCache);
+
+    els.todayList.innerHTML = todayRecords.map(todayRow).join('');
+    els.todayEmpty.hidden = todayRecords.length > 0;
+    if (!state.records.length) {
+      els.todayEmpty.textContent = '还没有记录，记下第一笔吧';
+    } else if (!todayRecords.length) {
+      els.todayEmpty.textContent = '今日暂无记录';
+    }
+    els.expandBtn.hidden = !hasHistory();
+
+    updateSettingsState();
+  }
+
+  function updateSettingsState() {
+    const hasRecords = state.records.length > 0;
+    els.openingBtn.disabled = hasRecords;
+    els.openingHint.textContent = hasRecords ? '已有记录，无法修改' : '仅在没有记录时可修改';
+  }
+
+  function renderAll() {
+    renderHome();
+    updateSubmitState();
+    renderCategoryChips();
+    if (els.detailDialog.open) renderDetail();
+    if (els.statsDialog.open) renderStats();
+    maybeShowBackupReminder();
+  }
+
+  /* ============================================================
+     Entry form
+     ============================================================ */
+  function renderCategoryChips() {
+    const categories = categoriesForType(direction, false);
+    const valid = categories.some(function (category) { return category.key === selectedCategory; });
+    if (!valid) selectedCategory = '';
+    els.categoryChips.innerHTML = categories.map(function (category) {
+      const checked = category.key === selectedCategory ? ' checked' : '';
+      return '<label class="chip">' +
+        '<input type="radio" name="category" value="' + escapeHtml(category.key) + '"' + checked + '>' +
+        '<span>' + escapeHtml(category.label) + '</span>' +
+      '</label>';
+    }).join('');
+    updateSubmitState();
+  }
+
+  function updateSubmitState() {
+    const amountOk = parseAmount(els.amountInput.value) !== null;
+    const dateOk = isValidEntryDate(els.dateInput.value);
+    const categoryOk = Boolean(selectedCategory);
+    els.submitBtn.disabled = !(amountOk && dateOk && categoryOk) || saveInProgress;
+    const showHint = !categoryOk && els.amountInput.value.trim() !== '';
+    els.categoryHint.hidden = !showHint;
+  }
+
+  function showAmountError(message) {
+    els.amountError.textContent = message;
+    els.amountError.hidden = false;
+    els.amountInput.setAttribute('aria-invalid', 'true');
+  }
+
+  function hideAmountError() {
+    els.amountError.hidden = true;
+    els.amountInput.removeAttribute('aria-invalid');
+  }
+
+  function showDateError(message) {
+    els.dateError.textContent = message;
+    els.dateError.hidden = false;
+    els.dateInput.setAttribute('aria-invalid', 'true');
+  }
+
+  function hideDateError() {
+    els.dateError.hidden = true;
+    els.dateInput.removeAttribute('aria-invalid');
+  }
+
+  function validateDate(showError) {
+    const value = els.dateInput.value;
+    if (!value) {
+      if (showError) showDateError('请选择日期');
+      return false;
+    }
+    if (!isValidDateKey(value) || value < MIN_DATE) {
+      if (showError) showDateError('请选择有效的日期');
+      return false;
+    }
+    if (value > todayCache) {
+      if (showError) showDateError('日期不能晚于今天');
+      return false;
+    }
+    hideDateError();
+    return true;
+  }
+
+  function validateAmount(showError) {
+    const raw = els.amountInput.value;
+    if (raw.trim() === '') {
+      if (showError) showAmountError('请输入金额');
+      return null;
+    }
+    const cents = parseAmount(raw);
+    if (cents === null) {
+      if (showError) showAmountError(amountErrorMessage(raw));
+      return null;
+    }
+    hideAmountError();
+    return cents;
+  }
+
+  function addRecord() {
+    if (saveInProgress) return;
+    if (!selectedCategory) {
+      els.categoryHint.hidden = false;
+      const first = els.categoryChips.querySelector('input');
+      if (first) first.focus();
+      return;
+    }
+    const amount = validateAmount(true);
+    if (amount === null) { els.amountInput.focus(); return; }
+    if (!validateDate(true)) { els.dateInput.focus(); return; }
+    const note = els.noteInput.value.trim();
+
+    const now = new Date().toISOString();
+    const record = {
+      id: uid(),
+      date: els.dateInput.value,
+      type: direction,
+      category: selectedCategory,
+      amount: amount,
+      balanceAfter: 0,
+      createdAt: now,
+      updatedAt: now
+    };
+    if (note) record.note = note.slice(0, 50);
+    const next = Object.assign({}, state, { records: state.records.concat(record) });
+
+    saveInProgress = true;
+    updateSubmitState();
+    const saved = commitState(next);
+    saveInProgress = false;
+    updateSubmitState();
+
+    if (!saved) {
+      showGlobalToast('保存失败，这笔没有写入。请检查浏览器存储空间。', null, 5000);
+      return;
+    }
+
+    renderAll();
+    els.amountInput.value = '';
+    els.noteInput.value = '';
+    hideAmountError();
+    els.amountInput.focus();
+    updateSubmitState();
+
+    const isToday = record.date === todayCache;
+    if (isToday) {
+      showGlobalToast('已记录 ' + recordAmountText(record) + ' · 余额 ' + formatSignedMoney(currentBalance()), null, 3000);
+    } else {
+      showGlobalToast('已记入 ' + formatMMDD(record.date) + '，可在明细查看', null, 3200);
+    }
+  }
+
+  /* ============================================================
+     Edit record
+     ============================================================ */
+  function updateEditDirectionButtons() {
+    document.querySelectorAll('[data-edit-direction]').forEach(function (button) {
+      const active = button.getAttribute('data-edit-direction') === editDirection;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
+  }
+
+  function renderEditCategoryChips() {
+    const categories = categoriesForType(editDirection, true).filter(function (category) {
+      return category.active || category.key === editCategory;
+    });
+    const valid = categories.some(function (category) { return category.key === editCategory; });
+    if (!valid) editCategory = '';
+    els.editCategoryChips.innerHTML = categories.map(function (category) {
+      const checked = category.key === editCategory ? ' checked' : '';
+      const suffix = category.active ? '' : '（停用）';
+      return '<label class="chip">' +
+        '<input type="radio" name="edit-category" value="' + escapeHtml(category.key) + '"' + checked + '>' +
+        '<span>' + escapeHtml(category.label + suffix) + '</span>' +
+      '</label>';
+    }).join('');
+    updateEditState();
+  }
+
+  function showEditAmountError(message) {
+    els.editAmountError.textContent = message;
+    els.editAmountError.hidden = false;
+    els.editAmountInput.setAttribute('aria-invalid', 'true');
+  }
+
+  function hideEditAmountError() {
+    els.editAmountError.hidden = true;
+    els.editAmountInput.removeAttribute('aria-invalid');
+  }
+
+  function showEditDateError(message) {
+    els.editDateError.textContent = message;
+    els.editDateError.hidden = false;
+    els.editDateInput.setAttribute('aria-invalid', 'true');
+  }
+
+  function hideEditDateError() {
+    els.editDateError.hidden = true;
+    els.editDateInput.removeAttribute('aria-invalid');
+  }
+
+  function updateEditState() {
+    const amountOk = parseAmount(els.editAmountInput.value) !== null;
+    const dateOk = isValidEntryDate(els.editDateInput.value);
+    const categoryOk = Boolean(editCategory);
+    els.editSaveBtn.disabled = !(amountOk && dateOk && categoryOk);
+    els.editCategoryHint.hidden = !(els.editAmountInput.value.trim() !== '' && !categoryOk);
+  }
+
+  function openEdit(recordId) {
+    const record = state.records.find(function (item) { return item.id === recordId; });
+    if (!record || record.type === 'adjust') return;
+    editRecordId = record.id;
+    editDirection = record.type;
+    editCategory = record.category;
+    els.editAmountInput.value = (record.amount / 100).toFixed(2);
+    els.editDateInput.value = record.date;
+    els.editDateInput.max = todayCache;
+    els.editDateInput.min = MIN_DATE;
+    els.editNoteInput.value = record.note || '';
+    els.editCategoryHint.hidden = true;
+    hideEditAmountError();
+    hideEditDateError();
+    els.editError.hidden = true;
+    updateEditDirectionButtons();
+    renderEditCategoryChips();
+    updateEditState();
+    openDialog(els.editDialog, { stack: true });
+    window.setTimeout(function () {
+      els.editAmountInput.focus();
+      els.editAmountInput.select();
+    }, 40);
+  }
+
+  function handleEditSubmit(event) {
+    event.preventDefault();
+    if (!editRecordId) return;
+    const record = state.records.find(function (item) { return item.id === editRecordId; });
+    if (!record) { closeDialog(els.editDialog); return; }
+
+    const categoryMeta = categoryByKey(editCategory);
+    if (!categoryMeta || categoryMeta.type !== editDirection) {
+      els.editCategoryHint.hidden = false;
+      const first = els.editCategoryChips.querySelector('input');
+      if (first) first.focus();
+      return;
+    }
+
+    const amount = parseAmount(els.editAmountInput.value);
+    if (amount === null) {
+      showEditAmountError(amountErrorMessage(els.editAmountInput.value));
+      els.editAmountInput.focus();
+      return;
+    }
+
+    if (!isValidEntryDate(els.editDateInput.value)) {
+      const value = els.editDateInput.value;
+      showEditDateError(!value ? '请选择日期' : value > todayCache ? '日期不能晚于今天' : '请选择有效的日期');
+      els.editDateInput.focus();
+      return;
+    }
+
+    const note = els.editNoteInput.value.trim();
+    const now = new Date().toISOString();
+    const next = Object.assign({}, state, {
+      records: state.records.map(function (item) {
+        if (item.id !== editRecordId) return item;
+        const updated = Object.assign({}, item, {
+          type: editDirection,
+          category: editCategory,
+          amount: amount,
+          date: els.editDateInput.value,
+          balanceAfter: 0,
+          updatedAt: now
+        });
+        if (note) updated.note = note.slice(0, 50);
+        else delete updated.note;
+        return updated;
+      })
+    });
+
+    if (!commitState(next)) {
+      els.editError.textContent = '本地保存失败，修改没有写入。请检查浏览器存储空间。';
+      els.editError.hidden = false;
+      return;
+    }
+
+    const wasDetailOpen = els.detailDialog.open;
+    closeDialog(els.editDialog);
+    renderAll();
+    if (wasDetailOpen) showDetailToast('已保存修改', null, 2400);
+    else showGlobalToast('已保存修改', null, 2400);
+  }
+
+  /* ============================================================
+     Balance calibration
+     ============================================================ */
+  function updateCalibrationPreview() {
+    const actual = parseSignedAmount(els.calibrationInput.value);
+    els.calibrationConfirm.disabled = true;
+    els.calibrationDiff.className = 'calibration-diff';
+
+    if (actual === null) {
+      els.calibrationDiff.textContent = els.calibrationInput.value.trim() ? '请输入有效金额' : '';
+      return;
+    }
+
+    const diff = actual - currentBalance();
+    if (diff === 0) {
+      els.calibrationDiff.textContent = '余额一致，无需校准';
+      return;
+    }
+
+    els.calibrationDiff.textContent = '将生成 ' +
+      (diff > 0 ? '+' + formatMoney(diff) : formatSignedMoney(diff)) +
+      ' 的校准记录，不影响收支统计';
+    els.calibrationDiff.classList.add(diff > 0 ? 'positive' : 'negative');
+    els.calibrationConfirm.disabled = false;
+  }
+
+  function openCalibration() {
+    const current = currentBalance();
+    els.calibrationCurrent.textContent = formatSignedMoney(current);
+    els.calibrationInput.value = (current / 100).toFixed(2);
+    els.calibrationDiff.textContent = '';
+    els.calibrationDiff.className = 'calibration-diff';
+    els.calibrationError.hidden = true;
+    updateCalibrationPreview();
+    openDialog(els.calibrationDialog);
+    window.setTimeout(function () {
+      els.calibrationInput.focus();
+      els.calibrationInput.select();
+    }, 40);
+  }
+
+  function handleCalibrationSubmit(event) {
+    event.preventDefault();
+    const actual = parseSignedAmount(els.calibrationInput.value);
+    if (actual === null) {
+      els.calibrationError.textContent = '请输入有效的实际余额';
+      els.calibrationError.hidden = false;
+      els.calibrationInput.focus();
+      return;
+    }
+
+    const diff = actual - currentBalance();
+    if (diff === 0) {
+      closeDialog(els.calibrationDialog);
+      showGlobalToast('余额一致，无需校准', null, 2400);
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const record = {
+      id: uid(),
+      date: todayCache,
+      type: 'adjust',
+      amount: diff,
+      note: '余额校准',
+      balanceAfter: 0,
+      createdAt: now,
+      updatedAt: now
+    };
+    const next = Object.assign({}, state, { records: state.records.concat(record) });
+
+    if (!commitState(next)) {
+      els.calibrationError.textContent = '本地保存失败，校准没有写入。请检查浏览器存储空间。';
+      els.calibrationError.hidden = false;
+      return;
+    }
+
+    closeDialog(els.calibrationDialog);
+    renderAll();
+    showGlobalToast('已校准 ' + (diff > 0 ? '+' + formatMoney(diff) : formatSignedMoney(diff)) +
+      ' · 余额 ' + formatSignedMoney(currentBalance()), null, 3200);
+  }
+
+  /* ============================================================
+     Rendering: detail
+     ============================================================ */
+  function dateLabel(key) {
+    if (key === todayCache) return '今天 · ' + formatMMDD(key);
+    if (key === yesterdayKey()) return '昨天 · ' + formatMMDD(key);
+    return key + ' · ' + weekdayName(key);
+  }
+
+  function detailRow(record) {
+    const label = recordLabel(record);
+    const editable = record.type !== 'adjust';
+    const note = record.note && editable ? '<span class="record-note">' + escapeHtml(record.note) + '</span>' : '';
+    return '' +
+      '<div class="record-row detail-row" data-id="' + escapeHtml(record.id) + '" data-editable="' + editable + '">' +
+        '<div class="record-main">' +
+          '<div class="record-meta">' +
+            '<span class="cat-tag">' + escapeHtml(label) + '</span>' +
+            note +
+          '</div>' +
+          '<div class="record-amount ' + recordAmountClass(record) + '">' + recordAmountText(record) + '</div>' +
+        '</div>' +
+        rowActions(record, label) +
+        '<div class="record-sub">记录后 ' + formatSignedMoney(record.balanceAfter) + '</div>' +
+      '</div>';
+  }
+
+  function populateDetailCategoryFilter() {
+    const optionGroups = ['expense', 'income'].map(function (type) {
+      const categories = state.categories
+        .filter(function (category) { return category.type === type; })
+        .sort(function (a, b) { return a.order - b.order; });
+      if (!categories.length) return '';
+      return '<optgroup label="' + (type === 'expense' ? '支出' : '收入') + '">' +
+        categories.map(function (category) {
+          return '<option value="' + escapeHtml(category.key) + '">' +
+            escapeHtml(category.label) + (category.active ? '' : '（停用）') +
+          '</option>';
+        }).join('') +
+      '</optgroup>';
+    }).join('');
+    const valid = !detailCategory || state.categories.some(function (category) {
+      return category.key === detailCategory;
+    });
+    if (!valid) detailCategory = '';
+    els.detailCategoryFilter.innerHTML = '<option value="">全部分类</option>' + optionGroups;
+    els.detailCategoryFilter.value = detailCategory;
+  }
+
+  function renderDetail() {
+    const query = detailQuery.trim().toLowerCase();
+    const filtered = state.records.slice().sort(compareDesc).filter(function (record) {
+      if (detailCategory && record.category !== detailCategory) return false;
+      if (!query) return true;
+      const label = recordLabel(record);
+      const amount = recordAmountText(record);
+      return (record.note || '').toLowerCase().indexOf(query) !== -1 ||
+        label.toLowerCase().indexOf(query) !== -1 ||
+        record.date.indexOf(query) !== -1 ||
+        amount.toLowerCase().indexOf(query) !== -1;
+    });
+
+    const filtering = Boolean(query || detailCategory);
+    els.detailCount.textContent = filtering
+      ? '共 ' + filtered.length + ' / ' + state.records.length + ' 笔'
+      : '共 ' + state.records.length + ' 笔';
+
+    if (!filtered.length) {
+      els.detailBody.innerHTML = '<div class="empty-detail">' +
+        (filtering ? '没有匹配的记录' : '还没有记录') +
+      '</div>';
+      return;
+    }
+
+    const groups = new Map();
+    filtered.forEach(function (record) {
+      if (!groups.has(record.date)) groups.set(record.date, []);
+      groups.get(record.date).push(record);
+    });
+
+    const dates = Array.from(groups.keys()).sort(function (a, b) { return a < b ? 1 : -1; });
+    els.detailBody.innerHTML = dates.map(function (date) {
+      const records = groups.get(date);
+      let dayIncome = 0;
+      let dayExpense = 0;
+      records.forEach(function (record) {
+        if (record.type === 'income') dayIncome += record.amount;
+        else if (record.type === 'expense') dayExpense += record.amount;
+      });
+      return '' +
+        '<section class="day-group">' +
+          '<div class="day-head">' +
+            '<div class="day-date">' + escapeHtml(dateLabel(date)) + '</div>' +
+            '<div class="day-totals">' +
+              '<span class="income">收 ' + formatPlusOrZero(dayIncome) + '</span>' +
+              '<span class="expense">支 ' + formatMinusOrZero(dayExpense) + '</span>' +
+              '<span class="day-count">' + records.length + ' 笔</span>' +
+            '</div>' +
+          '</div>' +
+          records.map(detailRow).join('') +
+        '</section>';
+    }).join('');
+  }
+
+  /* ============================================================
+     Rendering: stats
+     ============================================================ */
+  function percentText(amount, total) {
+    if (!total) return '0.0%';
+    const pct = (amount / total) * 100;
+    if (pct > 0 && pct < 0.05) return '<0.1%';
+    return pct.toFixed(1) + '%';
+  }
+
+  function statsData(period, monthKey) {
+    const currentMonth = todayCache.slice(0, 7);
+    const incomeGroups = new Map();
+    const expenseGroups = new Map();
+    let incomeTotal = 0;
+    let expenseTotal = 0;
+
+    state.records.forEach(function (record) {
+      if (record.type === 'adjust') return;
+      const recordMonth = record.date.slice(0, 7);
+      if (period === 'month' && recordMonth !== currentMonth) return;
+      if (period === 'history' && recordMonth !== monthKey) return;
+      const target = record.type === 'income' ? incomeGroups : expenseGroups;
+      target.set(record.category, (target.get(record.category) || 0) + record.amount);
+      if (record.type === 'income') incomeTotal += record.amount;
+      else expenseTotal += record.amount;
+    });
+
+    function toGroups(map) {
+      return Array.from(map.entries()).map(function (entry) {
+        const meta = categoryByKey(entry[0]) || { key: entry[0], label: '未分类', color: '#8D99AE', order: 999 };
+        return { key: entry[0], label: meta.label, color: meta.color, order: meta.order, amount: entry[1] };
+      }).sort(function (a, b) {
+        if (b.amount !== a.amount) return b.amount - a.amount;
+        return (a.order || 0) - (b.order || 0);
+      });
+    }
+
+    return {
+      incomeTotal: incomeTotal,
+      expenseTotal: expenseTotal,
+      net: incomeTotal - expenseTotal,
+      incomeGroups: toGroups(incomeGroups),
+      expenseGroups: toGroups(expenseGroups)
+    };
+  }
+
+  function emptyChartCard(title, label, period, periodText) {
+    const emptyText = period === 'all' ? '暂无' + label : periodText + '暂无' + label;
+    return '' +
+      '<section class="chart-card">' +
+        '<h3>' + title + '</h3>' +
+        '<div class="chart-empty">' +
+          '<div class="empty-ring" aria-hidden="true"></div>' +
+          '<p>' + emptyText + '</p>' +
+        '</div>' +
+      '</section>';
+  }
+
+  function chartCard(title, label, groups, total, period, periodText) {
+    if (!total || !groups.length) return emptyChartCard(title, label, period, periodText);
+    const circumference = 2 * Math.PI * 70;
+    let offset = 0;
+
+    const segments = groups.map(function (group) {
+      const length = (group.amount / total) * circumference;
+      const dash = length.toFixed(3) + ' ' + (circumference - length).toFixed(3);
+      const dashOffset = (-offset).toFixed(3);
+      offset += length;
+      return '<circle cx="100" cy="100" r="70" fill="none" stroke="' + group.color +
+        '" stroke-width="24" stroke-dasharray="' + dash + '" stroke-dashoffset="' + dashOffset +
+        '" transform="rotate(-90 100 100)"></circle>';
+    }).join('');
+
+    const aria = periodText + label + '构成：' + groups.map(function (group) {
+      return group.label + ' ' + formatMoney(group.amount) + '，占 ' + percentText(group.amount, total);
+    }).join('；');
+
+    const legend = groups.map(function (group) {
+      return '<li>' +
+        '<span class="legend-dot" style="background:' + group.color + '"></span>' +
+        '<span class="legend-name">' + escapeHtml(group.label) + '</span>' +
+        '<span class="legend-amount">' + formatMoney(group.amount) + '</span>' +
+        '<span class="legend-pct">' + percentText(group.amount, total) + '</span>' +
+      '</li>';
+    }).join('');
+
+    return '' +
+      '<section class="chart-card">' +
+        '<h3>' + title + '</h3>' +
+        '<div class="chart-visual" role="img" aria-label="' + escapeHtml(aria) + '">' +
+          '<svg viewBox="0 0 200 200" class="donut-svg" aria-hidden="true">' +
+            '<circle cx="100" cy="100" r="70" fill="none" stroke="var(--line)" stroke-width="24"></circle>' +
+            segments +
+          '</svg>' +
+          '<div class="donut-center"><strong>' + formatMoney(total) + '</strong><span>' + label + '</span></div>' +
+        '</div>' +
+        '<ul class="legend">' + legend + '</ul>' +
+      '</section>';
+  }
+
+  function populateMonthOptions() {
+    const months = new Set();
+    state.records.forEach(function (record) {
+      months.add(record.date.slice(0, 7));
+    });
+    months.add(todayCache.slice(0, 7));
+    const list = Array.from(months).sort(function (a, b) { return a < b ? 1 : -1; });
+    if (!statsMonth || !months.has(statsMonth)) statsMonth = list[0] || todayCache.slice(0, 7);
+    els.statsMonthSelect.innerHTML = list.map(function (month) {
+      return '<option value="' + month + '">' + formatMonth(month) + '</option>';
+    }).join('');
+    els.statsMonthSelect.value = statsMonth;
+  }
+
+  function renderStats() {
+    document.querySelectorAll('[data-period]').forEach(function (button) {
+      const active = button.getAttribute('data-period') === statsPeriod;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
+
+    populateMonthOptions();
+    els.statsMonthSelect.hidden = statsPeriod !== 'history';
+    els.periodLabel.hidden = statsPeriod === 'history';
+
+    const periodText = statsPeriod === 'month'
+      ? '本月'
+      : statsPeriod === 'history'
+        ? formatMonth(statsMonth)
+        : '全部';
+    const periodLabel = statsPeriod === 'month'
+      ? formatMonth(todayCache)
+      : statsPeriod === 'history'
+        ? formatMonth(statsMonth)
+        : '全部时间';
+    els.periodLabel.textContent = periodLabel;
+
+    const data = statsData(statsPeriod, statsMonth);
+    els.statsSummary.innerHTML = '' +
+      '<div class="summary-item"><span>收入合计</span><strong class="income">' + formatPlusMoney(data.incomeTotal) + '</strong></div>' +
+      '<div class="summary-item"><span>支出合计</span><strong class="expense">' + formatMinusMoney(data.expenseTotal) + '</strong></div>' +
+      '<div class="summary-item"><span>结余</span><strong class="' + (data.net < 0 ? 'expense' : data.net > 0 ? 'income' : 'muted') + '">' + formatNet(data.net) + '</strong></div>';
+
+    els.statsCharts.innerHTML =
+      chartCard('支出构成', '支出', data.expenseGroups, data.expenseTotal, statsPeriod, periodText) +
+      chartCard('收入构成', '收入', data.incomeGroups, data.incomeTotal, statsPeriod, periodText);
+  }
+
+  /* ============================================================
+     Dialogs
+     ============================================================ */
+  function syncBodyClass() {
+    document.body.classList.toggle('modal-open', Boolean(document.querySelector('dialog[open]')));
+  }
+
+  function openDialog(dialog, options) {
+    hideGlobalToast();
+    if (!options || !options.stack) {
+      document.querySelectorAll('dialog[open]').forEach(function (other) {
+        if (other !== dialog) other.close();
+      });
+    }
+    hideBackupReminder();
+    if (!dialog.open) dialog.showModal();
+    syncBodyClass();
+  }
+
+  function closeDialog(dialog) {
+    if (dialog && dialog.open) dialog.close();
+    syncBodyClass();
+  }
+
+  function openSettings() {
+    updateSettingsState();
+    openDialog(els.settingsDialog);
+  }
+
+  function openStats() {
+    statsPeriod = 'month';
+    statsMonth = todayCache.slice(0, 7);
+    renderStats();
+    const body = els.statsDialog.querySelector('.dialog-body');
+    if (body) body.scrollTop = 0;
+    openDialog(els.statsDialog);
+  }
+
+  function openDetail() {
+    detailQuery = '';
+    detailCategory = '';
+    els.detailSearch.value = '';
+    populateDetailCategoryFilter();
+    renderDetail();
+    els.detailBody.scrollTop = 0;
+    openDialog(els.detailDialog);
+  }
+
+  function openOpeningDialog(mode) {
+    openingMode = mode;
+    const first = mode === 'first';
+    els.openingTitle.textContent = first ? '设置期初余额' : '修改期初余额';
+    els.openingDesc.textContent = first
+      ? '这是账本的起始金额，只设置一次。之后每笔收支会自动增减。'
+      : '仅在没有记录时可以修改，修改后余额会重新计算。';
+    els.openingSkipBtn.textContent = first ? '跳过' : '取消';
+    els.openingInput.value = first ? '0.00' : (state.openingBalance / 100).toFixed(2);
+    els.openingError.hidden = true;
+    openDialog(els.openingDialog);
+    window.setTimeout(function () {
+      els.openingInput.focus();
+      els.openingInput.select();
+    }, 40);
+  }
+
+  function showOpeningError(message) {
+    els.openingError.textContent = message;
+    els.openingError.hidden = false;
+  }
+
+  function showRecovery(raw, message) {
+    corruptedRaw = raw || null;
+    els.recoveryDetail.textContent = message || '本地数据无法读取。';
+    els.downloadRawBtn.hidden = !corruptedRaw;
+    openDialog(els.recoveryDialog);
+  }
+
+  function showGlobalToast(message, undoRecord, duration) {
+    clearTimeout(globalToastTimer);
+    globalUndoRecord = undoRecord || null;
+    els.toastMessage.textContent = message;
+    els.toastAction.hidden = !globalUndoRecord;
+    els.toast.hidden = false;
+    const timeout = duration || (globalUndoRecord ? 5000 : 3000);
+    globalToastTimer = window.setTimeout(function () {
+      hideGlobalToast();
+    }, timeout);
+  }
+
+  function hideGlobalToast() {
+    clearTimeout(globalToastTimer);
+    els.toast.hidden = true;
+    els.toastAction.hidden = true;
+    globalUndoRecord = null;
+  }
+
+  function showDetailToast(message, undoRecord, duration) {
+    if (!els.detailDialog.open) {
+      showGlobalToast(message, undoRecord, duration);
+      return;
+    }
+    clearTimeout(detailToastTimer);
+    detailUndoRecord = undoRecord || null;
+    els.detailToastMessage.textContent = message;
+    els.detailToastAction.hidden = !detailUndoRecord;
+    els.detailToast.hidden = false;
+    const timeout = duration || (detailUndoRecord ? 5000 : 3000);
+    detailToastTimer = window.setTimeout(function () {
+      hideDetailToast();
+    }, timeout);
+  }
+
+  function hideDetailToast() {
+    clearTimeout(detailToastTimer);
+    els.detailToast.hidden = true;
+    els.detailToastAction.hidden = true;
+    detailUndoRecord = null;
+  }
+
+  /* ============================================================
+     Delete / restore
+     ============================================================ */
+  function deleteRecord(id, source) {
+    const record = state.records.find(function (item) { return item.id === id; });
+    if (!record) return;
+    const next = Object.assign({}, state, {
+      records: state.records.filter(function (item) { return item.id !== id; })
+    });
+    if (!commitState(next)) {
+      const message = '删除失败：本地保存不可用。';
+      if (source === 'detail' && els.detailDialog.open) showDetailToast(message, null, 4000);
+      else showGlobalToast(message, null, 4000);
+      return;
+    }
+    renderAll();
+    const message = '已删除 ' + recordAmountText(record);
+    if (source === 'detail' && els.detailDialog.open) showDetailToast(message, record);
+    else showGlobalToast(message, record);
+  }
+
+  function restoreRecord(record, source) {
+    const next = Object.assign({}, state, {
+      records: state.records.concat(record)
+    });
+    if (!commitState(next)) {
+      if (source === 'detail' && els.detailDialog.open) showDetailToast('恢复失败：本地保存不可用。', null, 4000);
+      else showGlobalToast('恢复失败：本地保存不可用。', null, 4000);
+      return;
+    }
+    renderAll();
+    if (source === 'detail' && els.detailDialog.open) showDetailToast('已恢复', null, 2200);
+    else showGlobalToast('已恢复', null, 2200);
+  }
+
+  /* ============================================================
+     Import / export
+     ============================================================ */
+  function downloadFile(filename, content, type) {
+    const blob = new Blob([content], { type: type || 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function downloadBackup() {
+    const now = new Date();
+    const data = {
+      app: 'jzb',
+      version: DATA_VERSION,
+      exportedAt: now.toISOString(),
+      openingBalance: state.openingBalance,
+      openingBalanceAt: state.openingBalanceAt,
+      categories: state.categories,
+      records: state.records
+    };
+    downloadFile('记账本备份-' + compactDateTime(now) + '.json', JSON.stringify(data, null, 2), 'application/json;charset=utf-8');
+    markBackup();
+  }
+
+  function parseBackup(raw) {
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch (error) {
+      throw new Error('文件不是有效的 JSON');
+    }
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      throw new Error('备份格式不正确');
+    }
+    if (data.app && data.app !== 'jzb') throw new Error('不是记账本的备份文件');
+    const version = Number(data.version == null ? 1 : data.version);
+    if (version !== 1 && version !== 2) throw new Error('备份版本不受支持');
+    if (!Number.isInteger(data.openingBalance) || Math.abs(data.openingBalance) > MAX_CENTS) {
+      throw new Error('期初余额无效');
+    }
+    if (!Array.isArray(data.records) || data.records.length > MAX_RECORDS) {
+      throw new Error('记录数量无效');
+    }
+
+    const categories = normalizeCategories(data.categories) || defaultCategories();
+    const categoryMap = buildCategoryMap(categories);
+    const today = todayKey();
+    const seenIds = Object.create(null);
+    let fallbackCount = 0;
+    let truncatedNotes = 0;
+
+    const records = data.records.map(function (rawRecord, index) {
+      if (!rawRecord || typeof rawRecord !== 'object') {
+        throw new Error('第 ' + (index + 1) + ' 条记录格式不正确');
+      }
+      const date = String(rawRecord.date || '');
+      if (!isValidDateKey(date) || date > today || date < MIN_DATE) {
+        throw new Error('第 ' + (index + 1) + ' 条记录日期无效');
+      }
+      const type = rawRecord.type;
+      if (type !== 'income' && type !== 'expense' && type !== 'adjust') {
+        throw new Error('第 ' + (index + 1) + ' 条记录方向无效');
+      }
+      const amount = rawRecord.amount;
+      if (!Number.isInteger(amount) || Math.abs(amount) > MAX_CENTS) {
+        throw new Error('第 ' + (index + 1) + ' 条记录金额无效');
+      }
+      if (type === 'adjust') {
+        if (amount === 0) throw new Error('第 ' + (index + 1) + ' 条校准金额不能为 0');
+      } else if (amount <= 0) {
+        throw new Error('第 ' + (index + 1) + ' 条记录金额需大于 0');
+      }
+
+      let category;
+      if (type !== 'adjust') {
+        category = rawRecord.category;
+        let cat = categoryMap[category];
+        if (version === 1 && (!cat || cat.type !== type)) {
+          category = type === 'income' ? 'other_income' : 'other_expense';
+          cat = categoryMap[category];
+          fallbackCount++;
+        }
+        if (!cat || cat.type !== type) {
+          throw new Error('第 ' + (index + 1) + ' 条记录分类无效');
+        }
+      }
+
+      let id = typeof rawRecord.id === 'string' && rawRecord.id && rawRecord.id.length <= 200
+        ? rawRecord.id : uid();
+      if (seenIds[id]) id = uid();
+      seenIds[id] = true;
+
+      let note;
+      if (typeof rawRecord.note === 'string' && rawRecord.note) {
+        note = rawRecord.note.slice(0, 50);
+        if (rawRecord.note.length > 50) truncatedNotes++;
+      }
+      const createdAt = typeof rawRecord.createdAt === 'string' && !Number.isNaN(Date.parse(rawRecord.createdAt))
+        ? rawRecord.createdAt : new Date(date + 'T12:00:00').toISOString();
+      const updatedAt = typeof rawRecord.updatedAt === 'string' && !Number.isNaN(Date.parse(rawRecord.updatedAt))
+        ? rawRecord.updatedAt : createdAt;
+
+      const record = {
+        id: id,
+        date: date,
+        type: type,
+        amount: amount,
+        balanceAfter: 0,
+        createdAt: createdAt,
+        updatedAt: updatedAt
+      };
+      if (category) record.category = category;
+      if (note) record.note = note;
+      return record;
+    });
+
+    const next = {
+      app: 'jzb',
+      version: DATA_VERSION,
+      openingBalance: data.openingBalance,
+      openingBalanceAt: typeof data.openingBalanceAt === 'string' &&
+        !Number.isNaN(Date.parse(data.openingBalanceAt))
+        ? data.openingBalanceAt : new Date().toISOString(),
+      categories: categories,
+      records: records
+    };
+    recomputeBalances(next);
+
+    const dates = records.map(function (record) { return record.date; }).sort();
+    return {
+      state: next,
+      meta: {
+        version: version,
+        count: records.length,
+        minDate: dates[0] || '',
+        maxDate: dates[dates.length - 1] || '',
+        fallbackCount: fallbackCount,
+        truncatedNotes: truncatedNotes
+      }
+    };
+  }
+
+  function renderImportPreview() {
+    if (!pendingImport) return;
+    const meta = pendingImport.meta;
+    const nextBalance = currentBalance(pendingImport.state);
+    const range = meta.count ? meta.minDate + ' ~ ' + meta.maxDate : '无记录';
+    const fallback = meta.fallbackCount
+      ? '<p class="muted-note">' + meta.fallbackCount + ' 条无分类记录将归入「其他支出 / 其他收入」。</p>' : '';
+    const versionNote = meta.version === 1
+      ? '<p class="muted-note">这是 v1 备份，导入时会自动补全分类。</p>' : '';
+    const currentNote = state.records.length
+      ? '<p class="warning-note">当前账本有 ' + state.records.length + ' 条记录，导入后将被覆盖。</p>' : '';
+
+    els.importPreview.innerHTML = '' +
+      '<div class="import-grid">' +
+        '<div><span>记录条数</span><strong>' + meta.count + ' 笔</strong></div>' +
+        '<div><span>导入后余额</span><strong>' + formatSignedMoney(nextBalance) + '</strong></div>' +
+        '<div class="wide"><span>日期范围</span><strong>' + escapeHtml(range) + '</strong></div>' +
+      '</div>' +
+      fallback + versionNote + currentNote;
+    els.importError.hidden = true;
+    els.importConfirmBtn.disabled = false;
+    els.importConfirmBtn.textContent = '覆盖并导入';
+  }
+
+  function handleImportFile(file) {
+    if (!file) return;
+    closeDialog(els.settingsDialog);
+    const reader = new FileReader();
+    reader.onload = function () {
+      try {
+        pendingImport = parseBackup(String(reader.result || ''));
+        renderImportPreview();
+        openDialog(els.importDialog);
+      } catch (error) {
+        pendingImport = null;
+        showGlobalToast(error.message || '导入失败', null, 5000);
+      } finally {
+        els.fileInput.value = '';
+      }
+    };
+    reader.onerror = function () {
+      els.fileInput.value = '';
+      showGlobalToast('文件读取失败', null, 4000);
+    };
+    reader.readAsText(file);
+  }
+
+  function applyImport() {
+    if (!pendingImport) return;
+    const next = pendingImport.state;
+    const count = pendingImport.meta.count;
+
+    if (state.records.length || state.openingBalance !== 0) {
+      downloadBackup();
+    }
+
+    els.importConfirmBtn.disabled = true;
+    els.importConfirmBtn.textContent = '导入中…';
+
+    if (!saveState(next)) {
+      els.importConfirmBtn.disabled = false;
+      els.importConfirmBtn.textContent = '覆盖并导入';
+      els.importError.textContent = '本地保存失败，未导入。请检查浏览器存储空间。';
+      els.importError.hidden = false;
+      return;
+    }
+
+    state = next;
+    pendingImport = null;
+    closeDialog(els.importDialog);
+    renderAll();
+    showGlobalToast('导入成功，共 ' + count + ' 笔', null, 3200);
+  }
+
+  /* ============================================================
+     CSV / clear / backup reminder
+     ============================================================ */
+  function csvCell(value) {
+    return '"' + String(value).replace(/"/g, '""') + '"';
+  }
+
+  function exportCsv() {
+    const header = ['日期', '收支方向', '分类', '金额', '备注', '记录后余额'];
+    const rows = state.records.slice().sort(compareAsc).map(function (record) {
+      const directionLabel = record.type === 'income' ? '收入' : record.type === 'expense' ? '支出' : '校准';
+      const categoryLabel = record.type === 'adjust'
+        ? '余额校准'
+        : (categoryByKey(record.category) ? categoryByKey(record.category).label : '未分类');
+      const signedAmount = record.type === 'expense' ? -record.amount : record.amount;
+      return [
+        record.date,
+        directionLabel,
+        categoryLabel,
+        (signedAmount / 100).toFixed(2),
+        record.note || '',
+        (record.balanceAfter / 100).toFixed(2)
+      ];
+    });
+    const lines = [header].concat(rows).map(function (row) {
+      return row.map(csvCell).join(',');
+    });
+    downloadFile('记账本明细-' + compactDateTime(new Date()) + '.csv', '\uFEFF' + lines.join('\r\n'), 'text/csv;charset=utf-8');
+  }
+
+  function getBackupMeta() {
+    try {
+      const raw = localStorage.getItem(BACKUP_META_KEY);
+      if (!raw) return null;
+      const meta = JSON.parse(raw);
+      if (!meta || !meta.at || Number.isNaN(Date.parse(meta.at))) return null;
+      return meta;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function markBackup() {
+    try {
+      localStorage.setItem(BACKUP_META_KEY, JSON.stringify({
+        at: new Date().toISOString(),
+        count: state.records.length
+      }));
+      localStorage.removeItem(BACKUP_SNOOZE_KEY);
+    } catch (ignored) {}
+    hideBackupReminder();
+  }
+
+  function hideBackupReminder() {
+    if (els.backupReminder) els.backupReminder.hidden = true;
+  }
+
+  function snoozeBackupReminder() {
+    try {
+      localStorage.setItem(BACKUP_SNOOZE_KEY, String(Date.now() + REMINDER_SNOOZE_MS));
+    } catch (ignored) {}
+    hideBackupReminder();
+    showGlobalToast('3 天后再提醒备份', null, 2200);
+  }
+
+  function maybeShowBackupReminder() {
+    if (!els.backupReminder || !state) return;
+    if (document.querySelector('dialog[open]')) {
+      hideBackupReminder();
+      return;
+    }
+    if (!state.records.length) {
+      hideBackupReminder();
+      return;
+    }
+
+    let snoozeUntil = 0;
+    try { snoozeUntil = Number(localStorage.getItem(BACKUP_SNOOZE_KEY) || 0); } catch (ignored) {}
+    if (Date.now() < snoozeUntil) {
+      hideBackupReminder();
+      return;
+    }
+
+    const now = Date.now();
+    const meta = getBackupMeta();
+    if (meta) {
+      const age = now - Date.parse(meta.at);
+      const added = state.records.length - Number(meta.count || 0);
+      if (age < 7 * 24 * 60 * 60 * 1000 && added < 20) {
+        hideBackupReminder();
+        return;
+      }
+    } else {
+      let earliest = now;
+      state.records.forEach(function (record) {
+        const time = Date.parse(record.createdAt);
+        if (Number.isFinite(time) && time < earliest) earliest = time;
+      });
+      if (state.records.length < 20 && now - earliest < 7 * 24 * 60 * 60 * 1000) {
+        hideBackupReminder();
+        return;
+      }
+    }
+
+    els.backupReminder.hidden = false;
+  }
+
+  function openClearDialog() {
+    if (state.records.length || state.openingBalance !== 0) downloadBackup();
+    els.clearConfirmInput.value = '';
+    els.clearError.hidden = true;
+    els.clearConfirmBtn.disabled = true;
+    openDialog(els.clearDialog);
+    window.setTimeout(function () { els.clearConfirmInput.focus(); }, 40);
+  }
+
+  function updateClearState() {
+    els.clearConfirmBtn.disabled = els.clearConfirmInput.value.trim() !== '清空';
+    els.clearError.hidden = true;
+  }
+
+  function handleClear(event) {
+    event.preventDefault();
+    if (els.clearConfirmInput.value.trim() !== '清空') {
+      els.clearError.textContent = '请输入「清空」两个字确认';
+      els.clearError.hidden = false;
+      return;
+    }
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(LEGACY_KEY);
+      localStorage.removeItem(BACKUP_META_KEY);
+      localStorage.removeItem(BACKUP_SNOOZE_KEY);
+    } catch (error) {
+      els.clearError.textContent = '本地存储不可用，清空失败';
+      els.clearError.hidden = false;
+      return;
+    }
+    window.location.reload();
+  }
+
+  /* ============================================================
+     Category manager
+     ============================================================ */
+  function showCategoryError(message) {
+    els.categoryManagerError.textContent = message;
+    els.categoryManagerError.hidden = false;
+  }
+
+  function updateCategoryTypeToggle() {
+    document.querySelectorAll('[data-cat-type]').forEach(function (button) {
+      const active = button.getAttribute('data-cat-type') === categoryManagerDirection;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
+  }
+
+  function renderCategoryManager() {
+    updateCategoryTypeToggle();
+    const categories = state.categories
+      .filter(function (category) { return category.type === categoryManagerDirection; })
+      .sort(function (a, b) { return a.order - b.order; });
+
+    els.categoryList.innerHTML = categories.map(function (category, index) {
+      const active = category.active;
+      return '<div class="category-row' + (active ? '' : ' is-inactive') + '" data-key="' + escapeHtml(category.key) + '">' +
+        '<input class="cat-color" type="color" value="' + escapeHtml(category.color) + '" aria-label="' + escapeHtml(category.label) + '颜色">' +
+        '<input class="cat-label text-input" type="text" maxlength="10" value="' + escapeHtml(category.label) + '" aria-label="' + escapeHtml(category.label) + '名称">' +
+        '<div class="cat-controls">' +
+          '<button type="button" class="cat-control" data-cat-move="up"' + (index === 0 ? ' disabled' : '') + ' aria-label="上移' + escapeHtml(category.label) + '">↑</button>' +
+          '<button type="button" class="cat-control" data-cat-move="down"' + (index === categories.length - 1 ? ' disabled' : '') + ' aria-label="下移' + escapeHtml(category.label) + '">↓</button>' +
+          '<button type="button" class="cat-control cat-toggle" data-cat-toggle aria-label="' + (active ? '停用' : '启用') + escapeHtml(category.label) + '">' + (active ? '停用' : '启用') + '</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function saveCategories(nextCategories) {
+    const next = Object.assign({}, state, { categories: nextCategories });
+    if (!commitState(next)) {
+      showCategoryError('本地保存失败，分类修改没有写入。');
+      return false;
+    }
+    els.categoryManagerError.hidden = true;
+    renderAll();
+    if (els.editDialog.open) renderEditCategoryChips();
+    renderCategoryManager();
+    return true;
+  }
+
+  function applyCategoryLabel(key, rawLabel) {
+    const category = state.categories.find(function (item) { return item.key === key; });
+    if (!category) return;
+    const label = String(rawLabel == null ? '' : rawLabel).trim();
+    if (!label) {
+      showCategoryError('分类名称不能为空');
+      renderCategoryManager();
+      return;
+    }
+    if (label.length > 10) {
+      showCategoryError('分类名称最多 10 个字');
+      renderCategoryManager();
+      return;
+    }
+    const duplicate = state.categories.some(function (item) {
+      return item.type === category.type && item.key !== key && item.label === label;
+    });
+    if (duplicate) {
+      showCategoryError('同方向下已有同名分类');
+      renderCategoryManager();
+      return;
+    }
+    const next = state.categories.map(function (item) {
+      return item.key === key ? Object.assign({}, item, { label: label }) : item;
+    });
+    saveCategories(next);
+  }
+
+  function applyCategoryColor(key, color) {
+    if (!/^#[0-9a-fA-F]{6}$/.test(color)) return;
+    const next = state.categories.map(function (item) {
+      return item.key === key ? Object.assign({}, item, { color: color }) : item;
+    });
+    saveCategories(next);
+  }
+
+  function moveCategory(key, delta) {
+    const category = state.categories.find(function (item) { return item.key === key; });
+    if (!category) return;
+    const typeCategories = state.categories
+      .filter(function (item) { return item.type === category.type; })
+      .sort(function (a, b) { return a.order - b.order; });
+    const index = typeCategories.findIndex(function (item) { return item.key === key; });
+    const target = index + delta;
+    if (index < 0 || target < 0 || target >= typeCategories.length) return;
+    const reordered = typeCategories.slice();
+    const moved = reordered[index];
+    reordered[index] = reordered[target];
+    reordered[target] = moved;
+    const orderByKey = new Map(reordered.map(function (item, order) { return [item.key, order]; }));
+    const next = state.categories.map(function (item) {
+      return item.type === category.type
+        ? Object.assign({}, item, { order: orderByKey.get(item.key) })
+        : item;
+    });
+    saveCategories(next);
+  }
+
+  function toggleCategory(key) {
+    const category = state.categories.find(function (item) { return item.key === key; });
+    if (!category) return;
+    if (category.active) {
+      const activeCount = state.categories.filter(function (item) {
+        return item.type === category.type && item.active;
+      }).length;
+      if (activeCount <= 1) {
+        showCategoryError('每种收支方向至少保留一个启用分类');
+        return;
+      }
+    }
+    const next = state.categories.map(function (item) {
+      return item.key === key ? Object.assign({}, item, { active: !item.active }) : item;
+    });
+    saveCategories(next);
+  }
+
+  function addCategory() {
+    const label = els.newCategoryLabel.value.trim();
+    if (!label) {
+      showCategoryError('请输入分类名称');
+      els.newCategoryLabel.focus();
+      return;
+    }
+    if (label.length > 10) {
+      showCategoryError('分类名称最多 10 个字');
+      els.newCategoryLabel.focus();
+      return;
+    }
+    const duplicate = state.categories.some(function (item) {
+      return item.type === categoryManagerDirection && item.label === label;
+    });
+    if (duplicate) {
+      showCategoryError('同方向下已有同名分类');
+      els.newCategoryLabel.focus();
+      return;
+    }
+    const typeCategories = state.categories.filter(function (item) {
+      return item.type === categoryManagerDirection;
+    });
+    const order = typeCategories.length
+      ? Math.max.apply(null, typeCategories.map(function (item) { return item.order; })) + 1
+      : 0;
+    const category = {
+      key: makeCategoryKey(),
+      label: label,
+      type: categoryManagerDirection,
+      color: pickCategoryColor(categoryManagerDirection),
+      order: order,
+      active: true
+    };
+    if (saveCategories(state.categories.concat(category))) {
+      els.newCategoryLabel.value = '';
+      els.newCategoryLabel.focus();
+    }
+  }
+
+  function openCategoryManager() {
+    categoryManagerDirection = 'expense';
+    els.categoryManagerError.hidden = true;
+    els.newCategoryLabel.value = '';
+    renderCategoryManager();
+    openDialog(els.categoryDialog);
+  }
+
+  /* ============================================================
+     Opening balance
+     ============================================================ */
+  function handleOpeningSubmit() {
+    const cents = parseAmount(els.openingInput.value, { allowZero: true });
+    if (cents === null) {
+      showOpeningError(els.openingInput.value.trim() === ''
+        ? '请输入余额'
+        : '请输入 0 到 9,999,999.99 之间的金额');
+      els.openingInput.focus();
+      return;
+    }
+
+    if (openingMode === 'first') {
+      const next = Object.assign(emptyState(), {
+        openingBalance: cents,
+        openingBalanceAt: new Date().toISOString()
+      });
+      const saved = saveState(next);
+      state = next;
+      closeDialog(els.openingDialog);
+      renderAll();
+      showGlobalToast(saved ? '期初余额已设置' : '已设置，但本地保存失败', null, saved ? 2800 : 5000);
+      return;
+    }
+
+    const next = Object.assign({}, state, {
+      openingBalance: cents,
+      openingBalanceAt: new Date().toISOString()
+    });
+    if (!commitState(next)) {
+      showOpeningError('本地保存失败，请重试');
+      return;
+    }
+    closeDialog(els.openingDialog);
+    renderAll();
+    showGlobalToast('期初余额已更新', null, 2600);
+  }
+
+  function handleOpeningSkip() {
+    if (openingMode !== 'first') {
+      closeDialog(els.openingDialog);
+      return;
+    }
+    const next = Object.assign(emptyState(), {
+      openingBalance: 0,
+      openingBalanceAt: new Date().toISOString()
+    });
+    const saved = saveState(next);
+    state = next;
+    closeDialog(els.openingDialog);
+    renderAll();
+    showGlobalToast(saved ? '已跳过，期初余额按 ¥0.00 开始' : '已跳过，但本地保存失败', null, saved ? 3000 : 5000);
+  }
+
+  /* ============================================================
+     Delete event delegation
+     ============================================================ */
+  function bindRecordActions() {
+    function handle(event, source) {
+      const deleteButton = event.target.closest('[data-delete]');
+      if (deleteButton) {
+        deleteRecord(deleteButton.getAttribute('data-delete'), source);
+        return;
+      }
+      const row = event.target.closest('.record-row[data-id]');
+      if (!row) return;
+      if (row.getAttribute('data-editable') !== 'true') {
+        const message = '校准记录只能删除，不能编辑';
+        if (source === 'detail' && els.detailDialog.open) showDetailToast(message, null, 2600);
+        else showGlobalToast(message, null, 2600);
+        return;
+      }
+      openEdit(row.getAttribute('data-id'));
+    }
+
+    els.todayList.addEventListener('click', function (event) { handle(event, 'home'); });
+    els.detailBody.addEventListener('click', function (event) { handle(event, 'detail'); });
+  }
+
+  /* ============================================================
+     Events
+     ============================================================ */
+  function bindEvents() {
+    els.settingsBtn.addEventListener('click', openSettings);
+    els.statsBtn.addEventListener('click', openStats);
+    els.expandBtn.addEventListener('click', openDetail);
+    els.calibrateBtn.addEventListener('click', openCalibration);
+
+    document.querySelectorAll('[data-direction]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        const nextDirection = button.getAttribute('data-direction');
+        if (nextDirection === direction) return;
+        direction = nextDirection;
+        selectedCategory = '';
+        document.querySelectorAll('[data-direction]').forEach(function (item) {
+          const active = item.getAttribute('data-direction') === direction;
+          item.classList.toggle('is-active', active);
+          item.setAttribute('aria-pressed', String(active));
+        });
+        renderCategoryChips();
+        hideAmountError();
+        updateSubmitState();
+      });
+    });
+
+    els.categoryChips.addEventListener('change', function (event) {
+      if (!event.target || event.target.name !== 'category') return;
+      selectedCategory = event.target.value;
+      updateSubmitState();
+    });
+
+    els.amountInput.addEventListener('input', function () {
+      const sanitized = sanitizeAmount(els.amountInput.value);
+      if (sanitized !== els.amountInput.value) els.amountInput.value = sanitized;
+      hideAmountError();
+      updateSubmitState();
+    });
+
+    els.amountInput.addEventListener('blur', function () {
+      if (els.amountInput.value.trim() !== '') validateAmount(true);
+    });
+
+    els.dateInput.addEventListener('change', function () {
+      dateTouched = true;
+      selectedDate = els.dateInput.value;
+      validateDate(true);
+      updateSubmitState();
+    });
+
+    els.entryForm.addEventListener('submit', function (event) {
+      event.preventDefault();
+      if (saveInProgress) return;
+      if (!selectedCategory) {
+        els.categoryHint.hidden = false;
+        const first = els.categoryChips.querySelector('input');
+        if (first) first.focus();
+        return;
+      }
+      if (validateAmount(true) === null) { els.amountInput.focus(); return; }
+      if (!validateDate(true)) { els.dateInput.focus(); return; }
+      addRecord();
+    });
+
+    document.querySelectorAll('[data-edit-direction]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        const nextDirection = button.getAttribute('data-edit-direction');
+        if (nextDirection === editDirection) return;
+        editDirection = nextDirection;
+        editCategory = '';
+        updateEditDirectionButtons();
+        renderEditCategoryChips();
+        hideEditAmountError();
+        hideEditDateError();
+        els.editError.hidden = true;
+        updateEditState();
+      });
+    });
+
+    els.editCategoryChips.addEventListener('change', function (event) {
+      if (!event.target || event.target.name !== 'edit-category') return;
+      editCategory = event.target.value;
+      els.editCategoryHint.hidden = true;
+      updateEditState();
+    });
+
+    els.editAmountInput.addEventListener('input', function () {
+      const sanitized = sanitizeAmount(els.editAmountInput.value);
+      if (sanitized !== els.editAmountInput.value) els.editAmountInput.value = sanitized;
+      hideEditAmountError();
+      els.editError.hidden = true;
+      updateEditState();
+    });
+
+    els.editAmountInput.addEventListener('blur', function () {
+      if (els.editAmountInput.value.trim() !== '' && parseAmount(els.editAmountInput.value) === null) {
+        showEditAmountError(amountErrorMessage(els.editAmountInput.value));
+      }
+    });
+
+    els.editDateInput.addEventListener('change', function () {
+      hideEditDateError();
+      els.editError.hidden = true;
+      updateEditState();
+    });
+
+    els.editForm.addEventListener('submit', handleEditSubmit);
+
+    els.calibrationInput.addEventListener('input', function () {
+      const sanitized = sanitizeSignedAmount(els.calibrationInput.value);
+      if (sanitized !== els.calibrationInput.value) els.calibrationInput.value = sanitized;
+      els.calibrationError.hidden = true;
+      updateCalibrationPreview();
+    });
+
+    els.calibrationForm.addEventListener('submit', handleCalibrationSubmit);
+
+    els.clearConfirmInput.addEventListener('input', updateClearState);
+    els.clearForm.addEventListener('submit', handleClear);
+
+    els.openingInput.addEventListener('input', function () {
+      const sanitized = sanitizeAmount(els.openingInput.value);
+      if (sanitized !== els.openingInput.value) els.openingInput.value = sanitized;
+      els.openingError.hidden = true;
+    });
+
+    els.openingForm.addEventListener('submit', function (event) {
+      event.preventDefault();
+      handleOpeningSubmit();
+    });
+
+    els.openingSkipBtn.addEventListener('click', handleOpeningSkip);
+
+    els.exportBtn.addEventListener('click', function () {
+      closeDialog(els.settingsDialog);
+      downloadBackup();
+      showGlobalToast('备份已导出', null, 2600);
+    });
+
+    els.csvExportBtn.addEventListener('click', function () {
+      closeDialog(els.settingsDialog);
+      exportCsv();
+      showGlobalToast('CSV 已导出', null, 2600);
+    });
+
+    els.importBtn.addEventListener('click', function () {
+      els.fileInput.click();
+    });
+
+    els.fileInput.addEventListener('change', function () {
+      handleImportFile(els.fileInput.files && els.fileInput.files[0]);
+    });
+
+    els.openingBtn.addEventListener('click', function () {
+      if (state.records.length) return;
+      closeDialog(els.settingsDialog);
+      openOpeningDialog('edit');
+    });
+
+    els.clearBtn.addEventListener('click', function () {
+      closeDialog(els.settingsDialog);
+      openClearDialog();
+    });
+
+    els.categoryBtn.addEventListener('click', function () {
+      closeDialog(els.settingsDialog);
+      openCategoryManager();
+    });
+
+    document.querySelectorAll('[data-cat-type]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        categoryManagerDirection = button.getAttribute('data-cat-type');
+        els.categoryManagerError.hidden = true;
+        renderCategoryManager();
+      });
+    });
+
+    els.categoryList.addEventListener('change', function (event) {
+      const row = event.target.closest('.category-row');
+      if (!row) return;
+      const key = row.getAttribute('data-key');
+      if (event.target.classList.contains('cat-label')) applyCategoryLabel(key, event.target.value);
+      else if (event.target.classList.contains('cat-color')) applyCategoryColor(key, event.target.value);
+    });
+
+    els.categoryList.addEventListener('click', function (event) {
+      const row = event.target.closest('.category-row');
+      if (!row) return;
+      const key = row.getAttribute('data-key');
+      const move = event.target.closest('[data-cat-move]');
+      if (move) {
+        moveCategory(key, move.getAttribute('data-cat-move') === 'up' ? -1 : 1);
+        return;
+      }
+      if (event.target.closest('[data-cat-toggle]')) toggleCategory(key);
+    });
+
+    els.addCategoryBtn.addEventListener('click', addCategory);
+
+    els.newCategoryLabel.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        addCategory();
+      }
+    });
+
+    els.importConfirmBtn.addEventListener('click', applyImport);
+
+    els.themeSelect.addEventListener('change', function () {
+      applyTheme(els.themeSelect.value);
+    });
+
+    els.installBtn.addEventListener('click', async function () {
+      const standalone = window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true;
+      if (standalone) {
+        els.installHint.textContent = '已安装，可独立打开';
+        return;
+      }
+      if (!deferredInstallPrompt) {
+        els.installHint.textContent = '请在浏览器菜单中选择「安装应用」或「添加到主屏幕」';
+        return;
+      }
+      deferredInstallPrompt.prompt();
+      try { await deferredInstallPrompt.userChoice; } catch (ignored) {}
+      deferredInstallPrompt = null;
+      updateInstallState();
+    });
+
+    window.addEventListener('beforeinstallprompt', function (event) {
+      event.preventDefault();
+      deferredInstallPrompt = event;
+      updateInstallState();
+    });
+
+    window.addEventListener('appinstalled', function () {
+      deferredInstallPrompt = null;
+      updateInstallState();
+      if (els.settingsDialog.open) closeDialog(els.settingsDialog);
+      showGlobalToast('已安装到桌面', null, 2600);
+    });
+
+    els.backupNowBtn.addEventListener('click', function () {
+      downloadBackup();
+      showGlobalToast('备份已导出', null, 2600);
+    });
+
+    els.backupLaterBtn.addEventListener('click', snoozeBackupReminder);
+
+    document.querySelectorAll('[data-period]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        statsPeriod = button.getAttribute('data-period');
+        renderStats();
+      });
+    });
+
+    els.statsMonthSelect.addEventListener('change', function () {
+      statsMonth = els.statsMonthSelect.value;
+      statsPeriod = 'history';
+      renderStats();
+    });
+
+    els.detailSearch.addEventListener('input', function () {
+      detailQuery = els.detailSearch.value;
+      renderDetail();
+      els.detailBody.scrollTop = 0;
+    });
+
+    els.detailCategoryFilter.addEventListener('change', function () {
+      detailCategory = els.detailCategoryFilter.value;
+      renderDetail();
+      els.detailBody.scrollTop = 0;
+    });
+
+    document.querySelectorAll('[data-close]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        const dialog = button.closest('dialog');
+        if (dialog) closeDialog(dialog);
+      });
+    });
+
+    [els.settingsDialog, els.statsDialog, els.detailDialog, els.importDialog, els.editDialog, els.calibrationDialog, els.clearDialog, els.categoryDialog].forEach(function (dialog) {
+      dialog.addEventListener('click', function (event) {
+        if (event.target === dialog) closeDialog(dialog);
+      });
+      dialog.addEventListener('cancel', function () {
+        syncBodyClass();
+      });
+    });
+
+    els.openingDialog.addEventListener('click', function (event) {
+      if (event.target === els.openingDialog && openingMode !== 'first') closeDialog(els.openingDialog);
+    });
+    els.openingDialog.addEventListener('cancel', function (event) {
+      if (openingMode === 'first') event.preventDefault();
+    });
+
+    els.recoveryDialog.addEventListener('cancel', function (event) {
+      event.preventDefault();
+    });
+
+    [els.settingsDialog, els.statsDialog, els.detailDialog, els.importDialog, els.editDialog, els.calibrationDialog, els.clearDialog, els.categoryDialog, els.openingDialog, els.recoveryDialog].forEach(function (dialog) {
+      dialog.addEventListener('close', function () {
+        syncBodyClass();
+        maybeShowBackupReminder();
+      });
+    });
+
+    els.editDialog.addEventListener('close', function () {
+      editRecordId = null;
+      els.editError.hidden = true;
+    });
+
+    els.calibrationDialog.addEventListener('close', function () {
+      els.calibrationError.hidden = true;
+    });
+
+    els.clearDialog.addEventListener('close', function () {
+      els.clearConfirmInput.value = '';
+      els.clearConfirmBtn.disabled = true;
+      els.clearError.hidden = true;
+    });
+
+    els.categoryDialog.addEventListener('close', function () {
+      els.categoryManagerError.hidden = true;
+      els.newCategoryLabel.value = '';
+    });
+
+    els.detailDialog.addEventListener('close', function () {
+      hideDetailToast();
+    });
+
+    els.importDialog.addEventListener('close', function () {
+      pendingImport = null;
+      els.importError.hidden = true;
+      els.importConfirmBtn.disabled = false;
+      els.importConfirmBtn.textContent = '覆盖并导入';
+    });
+
+    els.toastAction.addEventListener('click', function () {
+      if (!globalUndoRecord) return;
+      const record = globalUndoRecord;
+      globalUndoRecord = null;
+      hideGlobalToast();
+      restoreRecord(record, 'home');
+    });
+
+    els.detailToastAction.addEventListener('click', function () {
+      if (!detailUndoRecord) return;
+      const record = detailUndoRecord;
+      detailUndoRecord = null;
+      hideDetailToast();
+      restoreRecord(record, 'detail');
+    });
+
+    els.downloadRawBtn.addEventListener('click', function () {
+      if (!corruptedRaw) return;
+      downloadFile('记账本-原始数据-' + compactDateTime(new Date()) + '.txt', corruptedRaw, 'text/plain;charset=utf-8');
+    });
+
+    els.resetRawBtn.addEventListener('click', function () {
+      if (!window.confirm('确定重置账本？本地记录将被删除，且不可恢复。')) return;
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(LEGACY_KEY);
+      } catch (ignored) {}
+      window.location.reload();
+    });
+
+    bindRecordActions();
+
+    window.addEventListener('storage', function (event) {
+      if (event.key !== STORAGE_KEY) return;
+      if (!event.newValue) {
+        state = emptyState();
+        renderAll();
+        showGlobalToast('其他标签页清空了数据', null, 3200);
+        return;
+      }
+      try {
+        const next = normalizeLoadedState(JSON.parse(event.newValue));
+        state = next;
+        renderAll();
+        if (!document.querySelector('dialog[open]')) {
+          showGlobalToast('数据已在其他标签页更新', null, 2600);
+        }
+      } catch (error) {
+        showGlobalToast('其他标签页的数据无法读取', null, 4000);
+      }
+    });
+
+    window.addEventListener('focus', refreshToday);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) refreshToday();
+    });
+  }
+
+  function refreshToday() {
+    const nextToday = todayKey();
+    if (nextToday === todayCache) return;
+    const oldToday = todayCache;
+    todayCache = nextToday;
+    els.dateInput.max = nextToday;
+    els.editDateInput.max = nextToday;
+    if (!dateTouched && els.dateInput.value === oldToday) {
+      els.dateInput.value = nextToday;
+      selectedDate = nextToday;
+    }
+    renderAll();
+  }
+
+  /* ============================================================
+     Init
+     ============================================================ */
+  function init() {
+    cacheDom();
+    initTheme();
+    registerServiceWorker();
+    todayCache = todayKey();
+    selectedDate = todayCache;
+    els.dateInput.value = todayCache;
+    els.dateInput.max = todayCache;
+    els.dateInput.min = MIN_DATE;
+    els.editDateInput.max = todayCache;
+    els.editDateInput.min = MIN_DATE;
+
+    bindEvents();
+    updateInstallState();
+
+    const loaded = loadState();
+    if (loaded.corrupted) {
+      state = emptyState();
+      renderAll();
+      showRecovery(loaded.raw, loaded.error);
+      return;
+    }
+
+    state = loaded.state || emptyState();
+    renderAll();
+    updateSubmitState();
+
+    if (!loaded.state) {
+      openOpeningDialog('first');
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>
